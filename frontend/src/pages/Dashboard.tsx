@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export const Dashboard = () => {
@@ -17,6 +17,9 @@ export const Dashboard = () => {
 			<h1>Dashboard</h1>
 			<p>
 				Logged in as <strong>{user.username}</strong> ({user.email})
+			</p>
+			<p>
+				<Link to="/library">Go to my library</Link>
 			</p>
 			<button onClick={handleLogout}>Log out</button>
 		</div>

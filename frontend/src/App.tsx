@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Dashboard } from './pages/Dashboard'
 import { Home } from './pages/Home'
+import { Library } from './pages/Library'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 
@@ -17,6 +18,14 @@ export const App = () => {
 					element={
 						<ProtectedRoute>
 							<Dashboard />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/library"
+					element={
+						<ProtectedRoute>
+							<Library />
 						</ProtectedRoute>
 					}
 				/>
