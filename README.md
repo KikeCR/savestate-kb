@@ -88,11 +88,21 @@ The backend is mapped to host port **5001** instead of 5000. On macOS, port 5000
   npx tsc -b             # typecheck (not wired into `npm run build`, matches this repo's convention)
   ```
 
+- **Backend tooling**: Ruff for linting + formatting (Black-compatible), see `backend/pyproject.toml` for the full config. Install it via `backend/requirements-dev.txt` (kept separate from `requirements.txt` so the runtime image stays lean). Useful commands:
+
+  ```bash
+  docker compose exec backend ruff check app/           # lint
+  docker compose exec backend ruff check --fix app/     # lint, autofixing what it can
+  docker compose exec backend ruff format app/          # format
+  docker compose exec backend ruff format --check app/  # format, check only
+  ```
+
 ## Project structure
 
 ```
 backend/
   app/
+    constants.py  # shared enum-like values (entry status, profile visibility, validation bounds)
     models/       # User, Game, UserGameEntry (SQLAlchemy)
     routes/       # auth, games, entries, leaderboards, activity, users
     services/     # RAWG API client, Redis leaderboards, Redis activity feed
@@ -101,10 +111,13 @@ backend/
 frontend/
   src/
     api/          # typed fetch client
-    components/   # StatusBadge, GameCard, BarChart, NavBar, kanban/, ...
-    context/       # AuthContext
+    components/   # one folder per component (Component.tsx + .css + index.ts),
+                   # e.g. GameCard/, NavBar/, YearSelect/, kanban/
+    context/      # AuthContext, ThemeContext
+    hooks/        # useLocalStorageState, useToggleState, useAvailableYears
     pages/        # Home, Login, Register, Dashboard, Library, Board,
-                   # Leaderboards, Activity, Profile
+                   # Leaderboards, Activity, Profile (each with its own .css)
+    styles/       # shared.css (utility classes reused across pages)
 ```
 
 ## Data attribution

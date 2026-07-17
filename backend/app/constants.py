@@ -1,0 +1,13 @@
+ENTRY_STATUSES = ["backlog", "playing", "completed", "dropped", "replaying"]
+DEFAULT_ENTRY_STATUS = "backlog"
+STATUS_COMPLETED = "completed"
+
+PROFILE_VISIBILITIES = ["public", "private"]
+VISIBILITY_PUBLIC = "public"
+VISIBILITY_PRIVATE = "private"
+DEFAULT_PROFILE_VISIBILITY = VISIBILITY_PUBLIC
+
+RATING_MIN = 1
+RATING_MAX = 10
+MIN_YEAR_PLAYED = 1970
+MIN_PASSWORD_LENGTH = 8

@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required, login_user, logout_user
 
+from app.constants import MIN_PASSWORD_LENGTH, PROFILE_VISIBILITIES
 from app.extensions import db
 from app.models.user import User
 
@@ -16,8 +17,10 @@ def register():
 
     if not email or not username or not password:
         return jsonify({"error": "email, username, and password are required"}), 400
-    if len(password) < 8:
-        return jsonify({"error": "password must be at least 8 characters"}), 400
+    if len(password) < MIN_PASSWORD_LENGTH:
+        return jsonify(
+            {"error": f"password must be at least {MIN_PASSWORD_LENGTH} characters"}
+        ), 400
 
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "email already registered"}), 409
@@ -68,8 +71,10 @@ def update_me():
 
     if "profile_visibility" in data:
         value = data["profile_visibility"]
-        if value not in ("public", "private"):
-            return jsonify({"error": "profile_visibility must be 'public' or 'private'"}), 400
+        if value not in PROFILE_VISIBILITIES:
+            return jsonify(
+                {"error": f"profile_visibility must be one of {PROFILE_VISIBILITIES}"}
+            ), 400
         current_user.profile_visibility = value
 
     db.session.commit()

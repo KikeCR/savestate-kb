@@ -1,5 +1,4 @@
 from flask import Blueprint, jsonify
-
 from sqlalchemy import text
 
 from app.extensions import db, redis_client

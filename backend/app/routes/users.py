@@ -3,6 +3,7 @@ from collections import Counter
 from flask import Blueprint, jsonify
 from flask_login import current_user
 
+from app.constants import STATUS_COMPLETED, VISIBILITY_PRIVATE
 from app.models.user import User
 from app.models.user_game_entry import UserGameEntry
 
@@ -16,7 +17,7 @@ def _compute_stats(entries):
     rating_counts = Counter()
 
     for entry in entries:
-        if entry.status == "completed":
+        if entry.status == STATUS_COMPLETED:
             completions_per_year[entry.effective_year] += 1
         if entry.year_played:
             games_per_year[entry.year_played] += 1
@@ -48,7 +49,7 @@ def get_profile(username):
         return jsonify({"error": "user not found"}), 404
 
     is_owner = current_user.is_authenticated and current_user.id == user.id
-    if user.profile_visibility == "private" and not is_owner:
+    if user.profile_visibility == VISIBILITY_PRIVATE and not is_owner:
         return jsonify({"error": "this profile is private"}), 403
 
     entries = (

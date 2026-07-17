@@ -5,6 +5,8 @@ from flask import current_app
 
 RAWG_BASE_URL = "https://api.rawg.io/api"
 REQUEST_TIMEOUT = 5
+RAWG_SEARCH_CACHE_TTL_SECONDS = 6 * 60 * 60
+RAWG_SEARCH_KEY_PREFIX = "rawg:search:"
 
 
 class RawgConfigError(RuntimeError):
