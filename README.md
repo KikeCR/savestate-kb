@@ -1,18 +1,18 @@
 # SaveState
 
-A multi-user game completion tracker — a Backloggery/Grouvee-style app for tracking your backlog, in-progress, and completed games. Search for a game, drag it around a Kanban board as your status changes, rate it, and see it on your public profile and the site-wide activity feed.
+A multi-user game completion tracker, basically a Backloggery/Grouvee-style app for keeping tabs on your backlog, what you're playing, and what you've finished. Search for a game, drag it around a Kanban board as your status changes, rate it, and it shows up on your public profile and the site-wide activity feed.
 
 Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stack.
 
 ## Features
 
-- **Auth** — session/cookie-based (Flask-Login), not JWT
-- **Game search** — backed by the [RAWG](https://rawg.io) API, cached in Postgres and Redis so repeat lookups don't hit RAWG's rate limit
-- **Kanban board** — drag-and-drop across Backlog / Playing / Completed / Dropped / Replaying
-- **Full tracking data** — rating, hours played, dates, notes, favorites, replay count, platform, tags
-- **Leaderboards** — Redis sorted sets: most games completed this year, highest average rating given
-- **Activity feed** — a live-updating "X just completed Y" feed, backed by a Redis list
-- **Public profiles** — shareable, with a visibility toggle (public/private) and a stats dashboard (genre breakdown, rating distribution, completions per year)
+- **Auth**: session/cookie-based (Flask-Login), not JWT
+- **Game search**: backed by the [RAWG](https://rawg.io) API, cached in Postgres and Redis so repeat lookups don't hit RAWG's rate limit
+- **Kanban board**: drag-and-drop across Backlog / Playing / Completed / Dropped / Replaying
+- **Full tracking data**: rating, hours played, dates, notes, favorites, replay count, platform, tags
+- **Leaderboards**: Redis sorted sets for most games completed this year and highest average rating given
+- **Activity feed**: a live-updating "X just completed Y" feed, backed by a Redis list
+- **Public profiles**: shareable, with a visibility toggle (public/private) and a stats dashboard (genre breakdown, rating distribution, completions per year)
 
 ## Stack
 
@@ -30,7 +30,7 @@ Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stac
 ## Prerequisites
 
 - Docker and Docker Compose
-- A free [RAWG API key](https://rawg.io/apidocs) — required for game search to actually return anything beyond what's already cached locally
+- A free [RAWG API key](https://rawg.io/apidocs). You'll need this for game search to return anything beyond what's already cached locally.
 
 ## Setup
 
@@ -41,8 +41,8 @@ Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stac
    ```
 
    Edit `.env` and set:
-   - `SECRET_KEY` — any random string (used to sign Flask session cookies)
-   - `RAWG_API_KEY` — your key from [rawg.io/apidocs](https://rawg.io/apidocs)
+   - `SECRET_KEY`: any random string (used to sign Flask session cookies)
+   - `RAWG_API_KEY`: your key from [rawg.io/apidocs](https://rawg.io/apidocs)
 
    The Postgres credentials in `.env.example` are fine for local development as-is.
 
@@ -67,11 +67,11 @@ Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stac
 
 ### Ports
 
-The backend is mapped to host port **5001**, not 5000 — on macOS, port 5000 is commonly claimed by the AirPlay Receiver (ControlCenter). The frontend's `VITE_API_URL` in `docker-compose.yml` points at `5001` accordingly.
+The backend is mapped to host port **5001** instead of 5000. On macOS, port 5000 is commonly claimed by the AirPlay Receiver (ControlCenter), so this dodges that conflict. The frontend's `VITE_API_URL` in `docker-compose.yml` points at `5001` accordingly.
 
 ## Development notes
 
-- **Editor tooling needs a local `npm install` too.** The frontend container's `node_modules` lives in a Docker-only anonymous volume — it never syncs back to the host, so your editor's TypeScript server won't resolve anything until you also run `npm install` inside `frontend/` on your host machine.
+- **Editor tooling needs a local `npm install` too.** The frontend container's `node_modules` lives in a Docker-only anonymous volume that never syncs back to the host, so your editor's TypeScript server won't resolve anything until you also run `npm install` inside `frontend/` on your host machine.
 - **Changing `.env` requires recreating the backend container, not just restarting it.** `docker compose restart backend` reuses the container's existing (stale) environment. After editing `.env`, run `docker compose up -d backend` instead, which recreates the container and re-reads `env_file`.
 - **Database migrations**: after changing a model, generate a migration and apply it:
 
@@ -80,12 +80,12 @@ The backend is mapped to host port **5001**, not 5000 — on macOS, port 5000 is
   docker compose exec backend flask db upgrade
   ```
 
-- **Frontend tooling**: TypeScript strict mode, Prettier (no semicolons, single quotes, tabs — see `.prettierrc`), no ESLint. Useful commands from `frontend/`:
+- **Frontend tooling**: TypeScript strict mode, Prettier (no semicolons, single quotes, tabs, see `.prettierrc` for the full config), no ESLint. Useful commands from `frontend/`:
 
   ```bash
   npm run format        # prettier --write
   npm run format:check  # prettier --check
-  npx tsc -b             # typecheck (not wired into `npm run build` — matches this repo's convention)
+  npx tsc -b             # typecheck (not wired into `npm run build`, matches this repo's convention)
   ```
 
 ## Project structure
