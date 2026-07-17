@@ -59,3 +59,18 @@ def me():
     if not current_user.is_authenticated:
         return jsonify({"user": None})
     return jsonify({"user": current_user.to_private_dict()})
+
+
+@auth_bp.route("/me", methods=["PATCH"])
+@login_required
+def update_me():
+    data = request.get_json(silent=True) or {}
+
+    if "profile_visibility" in data:
+        value = data["profile_visibility"]
+        if value not in ("public", "private"):
+            return jsonify({"error": "profile_visibility must be 'public' or 'private'"}), 400
+        current_user.profile_visibility = value
+
+    db.session.commit()
+    return jsonify(current_user.to_private_dict())

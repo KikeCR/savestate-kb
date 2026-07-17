@@ -75,3 +75,16 @@ export interface ActivityEvent {
 	action: ActivityAction
 	created_at: string
 }
+
+export interface Stats {
+	completions_per_year: { year: number; count: number }[]
+	genre_breakdown: { genre: string; count: number }[]
+	rating_distribution: { rating: number; count: number }[]
+}
+
+export interface ProfileResponse {
+	user: PublicUser
+	is_owner: boolean
+	entries: Entry[]
+	stats: Stats
+}

@@ -20,7 +20,9 @@ export const NavBar = () => {
 			<Link to="/leaderboards">Leaderboards</Link>
 			<Link to="/activity">Activity</Link>
 			<span className="nav-bar__spacer" />
-			<span className="nav-bar__user">{user.username}</span>
+			<Link to={`/profile/${user.username}`} className="nav-bar__user">
+				{user.username}
+			</Link>
 			<button onClick={handleLogout}>Log out</button>
 		</nav>
 	)
