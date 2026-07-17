@@ -11,13 +11,11 @@ def _completions_key(year):
     return f"{COMPLETIONS_KEY_PREFIX}:{year}"
 
 
-def record_completion(user_id, completion_date=None):
-    year = (completion_date or date.today()).year
+def record_completion(user_id, year):
     redis_client.zincrby(_completions_key(year), 1, str(user_id))
 
 
-def remove_completion(user_id, completion_date=None):
-    year = (completion_date or date.today()).year
+def remove_completion(user_id, year):
     key = _completions_key(year)
     new_score = redis_client.zincrby(key, -1, str(user_id))
     if new_score <= 0:

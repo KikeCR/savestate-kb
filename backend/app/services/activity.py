@@ -7,7 +7,7 @@ ACTIVITY_FEED_KEY = "activity:feed"
 ACTIVITY_FEED_MAX_LENGTH = 100
 
 
-def record_activity(user, game, action):
+def record_activity(user, game, action, **details):
     event = {
         "user_id": user.id,
         "username": user.username,
@@ -16,6 +16,7 @@ def record_activity(user, game, action):
         "game_cover_image_url": game.cover_image_url,
         "action": action,
         "created_at": datetime.now(timezone.utc).isoformat(),
+        **details,
     }
     redis_client.lpush(ACTIVITY_FEED_KEY, json.dumps(event))
     redis_client.ltrim(ACTIVITY_FEED_KEY, 0, ACTIVITY_FEED_MAX_LENGTH - 1)

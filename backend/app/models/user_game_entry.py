@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy.dialects.postgresql import ARRAY
 
@@ -19,6 +19,10 @@ class UserGameEntry(db.Model):
             "rating IS NULL OR (rating >= 1 AND rating <= 10)",
             name="ck_user_game_entries_rating",
         ),
+        db.CheckConstraint(
+            "year_played IS NULL OR year_played >= 1970",
+            name="ck_user_game_entries_year_played",
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -29,6 +33,9 @@ class UserGameEntry(db.Model):
     rating = db.Column(db.Integer)
     start_date = db.Column(db.Date)
     completion_date = db.Column(db.Date)
+    # Coarser, independent alternative to completion_date: lets users log games
+    # played before they started using this tracker without needing an exact date.
+    year_played = db.Column(db.Integer)
     hours_played = db.Column(db.Float, nullable=False, default=0)
     notes = db.Column(db.Text)
     favorite = db.Column(db.Boolean, nullable=False, default=False)
@@ -48,6 +55,18 @@ class UserGameEntry(db.Model):
 
     game = db.relationship("Game")
 
+    @property
+    def effective_year(self):
+        """The year a completion counts toward: year_played (an explicit,
+        possibly backdated tag) takes priority over completion_date, since a
+        user can set year_played after the fact to correct when they actually
+        played something."""
+        if self.year_played:
+            return self.year_played
+        if self.completion_date:
+            return self.completion_date.year
+        return date.today().year
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -56,6 +75,7 @@ class UserGameEntry(db.Model):
             "rating": self.rating,
             "start_date": self.start_date.isoformat() if self.start_date else None,
             "completion_date": self.completion_date.isoformat() if self.completion_date else None,
+            "year_played": self.year_played,
             "hours_played": self.hours_played,
             "notes": self.notes,
             "favorite": self.favorite,

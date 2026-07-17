@@ -42,6 +42,7 @@ export interface Entry {
 	rating: number | null
 	start_date: string | null
 	completion_date: string | null
+	year_played: number | null
 	hours_played: number
 	notes: string | null
 	favorite: boolean
@@ -64,7 +65,7 @@ export interface LeaderboardEntry {
 	score: number
 }
 
-export type ActivityAction = 'added' | 'completed'
+export type ActivityAction = 'added' | 'completed' | 'rated' | 'logged_year'
 
 export interface ActivityEvent {
 	user_id: number
@@ -74,10 +75,13 @@ export interface ActivityEvent {
 	game_cover_image_url: string | null
 	action: ActivityAction
 	created_at: string
+	rating?: number
+	year_played?: number
 }
 
 export interface Stats {
 	completions_per_year: { year: number; count: number }[]
+	games_per_year: { year: number; count: number }[]
 	genre_breakdown: { genre: string; count: number }[]
 	rating_distribution: { rating: number; count: number }[]
 }

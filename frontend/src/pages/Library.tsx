@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { api } from '../api/client'
 import {
 	ENTRY_STATUSES,
@@ -7,12 +7,15 @@ import {
 	type Game,
 } from '../types'
 
+const RATING_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1)
+
 export const Library = () => {
 	const [entries, setEntries] = useState<Entry[]>([])
 	const [query, setQuery] = useState('')
 	const [results, setResults] = useState<Game[]>([])
 	const [searching, setSearching] = useState(false)
 	const [error, setError] = useState<string | null>(null)
+	const [yearFilter, setYearFilter] = useState('all')
 
 	const loadEntries = async () => {
 		const data = await api.get<{ results: Entry[] }>('/api/entries')
@@ -24,6 +27,23 @@ export const Library = () => {
 			setError(err instanceof Error ? err.message : String(err)),
 		)
 	}, [])
+
+	const availableYears = useMemo(
+		() =>
+			Array.from(
+				new Set(
+					entries
+						.map((entry) => entry.year_played)
+						.filter((year): year is number => year != null),
+				),
+			).sort((a, b) => b - a),
+		[entries],
+	)
+
+	const visibleEntries =
+		yearFilter === 'all'
+			? entries
+			: entries.filter((entry) => String(entry.year_played) === yearFilter)
 
 	const handleSearch = async (e: FormEvent) => {
 		e.preventDefault()
@@ -56,6 +76,19 @@ export const Library = () => {
 
 	const handleStatusChange = async (entry: Entry, status: EntryStatus) => {
 		await api.patch(`/api/entries/${entry.id}`, { status })
+		await loadEntries()
+	}
+
+	const handleRatingChange = async (entry: Entry, value: string) => {
+		const rating = value === '' ? null : Number(value)
+		await api.patch(`/api/entries/${entry.id}`, { rating })
+		await loadEntries()
+	}
+
+	const handleYearPlayedChange = async (entry: Entry, value: string) => {
+		const yearPlayed = value === '' ? null : Number(value)
+		if (yearPlayed === entry.year_played) return
+		await api.patch(`/api/entries/${entry.id}`, { year_played: yearPlayed })
 		await loadEntries()
 	}
 
@@ -96,12 +129,31 @@ export const Library = () => {
 				</ul>
 			)}
 
-			<h2>Tracked games ({entries.length})</h2>
-			{entries.length === 0 ? (
+			<div className="page-header-row">
+				<h2>Tracked games ({visibleEntries.length})</h2>
+				{availableYears.length > 0 && (
+					<label className="year-filter">
+						Year played
+						<select
+							value={yearFilter}
+							onChange={(e) => setYearFilter(e.target.value)}
+						>
+							<option value="all">All years</option>
+							{availableYears.map((year) => (
+								<option key={year} value={year}>
+									{year}
+								</option>
+							))}
+						</select>
+					</label>
+				)}
+			</div>
+
+			{visibleEntries.length === 0 ? (
 				<p>Nothing tracked yet — search for a game above to get started.</p>
 			) : (
 				<ul className="entry-list">
-					{entries.map((entry) => (
+					{visibleEntries.map((entry) => (
 						<li key={entry.id}>
 							{entry.game.cover_image_url && (
 								<img
@@ -123,7 +175,28 @@ export const Library = () => {
 									</option>
 								))}
 							</select>
-							<span>{entry.rating ? `${entry.rating}/10` : 'unrated'}</span>
+							<select
+								value={entry.rating ?? ''}
+								onChange={(e) => handleRatingChange(entry, e.target.value)}
+								aria-label="Rating"
+							>
+								<option value="">Unrated</option>
+								{RATING_OPTIONS.map((rating) => (
+									<option key={rating} value={rating}>
+										{rating}/10
+									</option>
+								))}
+							</select>
+							<input
+								type="number"
+								className="entry-list__year-input"
+								placeholder="Year played"
+								aria-label="Year played"
+								min={1970}
+								max={new Date().getFullYear() + 1}
+								defaultValue={entry.year_played ?? ''}
+								onBlur={(e) => handleYearPlayedChange(entry, e.target.value)}
+							/>
 							<button onClick={() => handleDelete(entry)}>Remove</button>
 						</li>
 					))}

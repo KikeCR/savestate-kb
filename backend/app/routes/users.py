@@ -11,12 +11,15 @@ users_bp = Blueprint("users", __name__, url_prefix="/api/users")
 
 def _compute_stats(entries):
     completions_per_year = Counter()
+    games_per_year = Counter()
     genre_counts = Counter()
     rating_counts = Counter()
 
     for entry in entries:
-        if entry.status == "completed" and entry.completion_date:
-            completions_per_year[entry.completion_date.year] += 1
+        if entry.status == "completed":
+            completions_per_year[entry.effective_year] += 1
+        if entry.year_played:
+            games_per_year[entry.year_played] += 1
         for genre in entry.game.genres or []:
             genre_counts[genre] += 1
         if entry.rating is not None:
@@ -25,6 +28,9 @@ def _compute_stats(entries):
     return {
         "completions_per_year": [
             {"year": year, "count": count} for year, count in sorted(completions_per_year.items())
+        ],
+        "games_per_year": [
+            {"year": year, "count": count} for year, count in sorted(games_per_year.items())
         ],
         "genre_breakdown": [
             {"genre": genre, "count": count} for genre, count in genre_counts.most_common()

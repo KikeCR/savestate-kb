@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
 	DndContext,
 	DragOverlay,
@@ -17,6 +17,7 @@ export const Board = () => {
 	const [entries, setEntries] = useState<Entry[]>([])
 	const [error, setError] = useState<string | null>(null)
 	const [activeEntry, setActiveEntry] = useState<Entry | null>(null)
+	const [yearFilter, setYearFilter] = useState('all')
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
 	)
@@ -31,6 +32,26 @@ export const Board = () => {
 			setError(err instanceof Error ? err.message : String(err)),
 		)
 	}, [])
+
+	const availableYears = useMemo(
+		() =>
+			Array.from(
+				new Set(
+					entries
+						.map((entry) => entry.year_played)
+						.filter((year): year is number => year != null),
+				),
+			).sort((a, b) => b - a),
+		[entries],
+	)
+
+	// Backlog games haven't been played yet, so a "year played" filter never
+	// hides them — it only narrows the columns that represent actual play.
+	const columnEntries = (status: EntryStatus) => {
+		const statusEntries = entries.filter((e) => e.status === status)
+		if (status === 'backlog' || yearFilter === 'all') return statusEntries
+		return statusEntries.filter((e) => String(e.year_played) === yearFilter)
+	}
 
 	const handleDragStart = (event: DragStartEvent) => {
 		const entry = entries.find((e) => e.id === event.active.id)
@@ -62,7 +83,25 @@ export const Board = () => {
 
 	return (
 		<div>
-			<h1>Board</h1>
+			<div className="page-header-row">
+				<h1>Board</h1>
+				{availableYears.length > 0 && (
+					<label className="year-filter">
+						Year played
+						<select
+							value={yearFilter}
+							onChange={(e) => setYearFilter(e.target.value)}
+						>
+							<option value="all">All years</option>
+							{availableYears.map((year) => (
+								<option key={year} value={year}>
+									{year}
+								</option>
+							))}
+						</select>
+					</label>
+				)}
+			</div>
 			{error && <p className="error">{error}</p>}
 			<DndContext
 				sensors={sensors}
@@ -74,7 +113,7 @@ export const Board = () => {
 						<KanbanColumn
 							key={status}
 							status={status}
-							entries={entries.filter((e) => e.status === status)}
+							entries={columnEntries(status)}
 						/>
 					))}
 				</div>

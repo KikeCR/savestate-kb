@@ -65,6 +65,16 @@ export const Profile = () => {
 						emptyMessage="No completions yet."
 					/>
 				</section>
+				<section>
+					<h3>Played by year</h3>
+					<BarChart
+						data={stats.games_per_year.map((g) => ({
+							label: String(g.year),
+							value: g.count,
+						}))}
+						emptyMessage="No games tagged with a year played yet."
+					/>
+				</section>
 			</div>
 
 			<h2>Library ({entries.length})</h2>

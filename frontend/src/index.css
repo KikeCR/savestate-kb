@@ -110,6 +110,30 @@ pre {
 	object-fit: cover;
 }
 
+.entry-list__year-input {
+	width: 90px;
+	padding: 0.3rem;
+	font-size: 0.9rem;
+	border: 1px solid #ccc;
+	border-radius: 4px;
+}
+
+.page-header-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.year-filter {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.85rem;
+	color: #555;
+}
+
 .nav-bar {
 	display: flex;
 	align-items: center;
@@ -293,6 +317,13 @@ pre {
 
 .leaderboard-columns section {
 	flex: 1 1 260px;
+}
+
+.leaderboard-section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
 }
 
 .leaderboard-list {

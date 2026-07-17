@@ -2,25 +2,34 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { LeaderboardEntry } from '../types'
 
+const CURRENT_YEAR = new Date().getFullYear()
+const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_YEAR - i)
+
 export const Leaderboards = () => {
 	const [completions, setCompletions] = useState<LeaderboardEntry[]>([])
 	const [avgRating, setAvgRating] = useState<LeaderboardEntry[]>([])
 	const [error, setError] = useState<string | null>(null)
-	const year = new Date().getFullYear()
+	const [year, setYear] = useState(CURRENT_YEAR)
 
 	useEffect(() => {
-		Promise.all([
-			api.get<{ results: LeaderboardEntry[] }>('/api/leaderboards/completions'),
-			api.get<{ results: LeaderboardEntry[] }>('/api/leaderboards/avg-rating'),
-		])
-			.then(([completionsData, avgRatingData]) => {
-				setCompletions(completionsData.results)
-				setAvgRating(avgRatingData.results)
-			})
+		api
+			.get<{ results: LeaderboardEntry[] }>('/api/leaderboards/avg-rating')
+			.then((data) => setAvgRating(data.results))
 			.catch((err) =>
 				setError(err instanceof Error ? err.message : String(err)),
 			)
 	}, [])
+
+	useEffect(() => {
+		api
+			.get<{ year: number; results: LeaderboardEntry[] }>(
+				`/api/leaderboards/completions?year=${year}`,
+			)
+			.then((data) => setCompletions(data.results))
+			.catch((err) =>
+				setError(err instanceof Error ? err.message : String(err)),
+			)
+	}, [year])
 
 	return (
 		<div>
@@ -28,9 +37,21 @@ export const Leaderboards = () => {
 			{error && <p className="error">{error}</p>}
 			<div className="leaderboard-columns">
 				<section>
-					<h2>Most completed in {year}</h2>
+					<div className="leaderboard-section-header">
+						<h2>Most completed</h2>
+						<select
+							value={year}
+							onChange={(e) => setYear(Number(e.target.value))}
+						>
+							{YEAR_OPTIONS.map((y) => (
+								<option key={y} value={y}>
+									{y}
+								</option>
+							))}
+						</select>
+					</div>
 					{completions.length === 0 ? (
-						<p>No completions yet this year.</p>
+						<p>No completions in {year}.</p>
 					) : (
 						<ol className="leaderboard-list">
 							{completions.map((entry) => (
