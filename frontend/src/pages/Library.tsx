@@ -113,10 +113,12 @@ export const Library = () => {
 				<ul className="search-results">
 					{results.map((game) => (
 						<li key={game.id}>
-							{game.cover_image_url && (
-								<img src={game.cover_image_url} alt={game.title} width={40} />
-							)}
-							<span>{game.title}</span>
+							<div className="search-results__info">
+								{game.cover_image_url && (
+									<img src={game.cover_image_url} alt={game.title} width={40} />
+								)}
+								<span>{game.title}</span>
+							</div>
 							<button onClick={() => handleAdd(game)}>
 								<Plus size={14} /> Add to library
 							</button>
@@ -150,51 +152,55 @@ export const Library = () => {
 				<ul className="entry-list">
 					{visibleEntries.map((entry) => (
 						<li key={entry.id}>
-							{entry.game.cover_image_url && (
-								<img
-									src={entry.game.cover_image_url}
-									alt={entry.game.title}
-									width={40}
+							<div className="entry-list__info">
+								{entry.game.cover_image_url && (
+									<img
+										src={entry.game.cover_image_url}
+										alt={entry.game.title}
+										width={40}
+									/>
+								)}
+								<span>{entry.game.title}</span>
+							</div>
+							<div className="entry-list__controls">
+								<select
+									value={entry.status}
+									onChange={(e) =>
+										handleStatusChange(entry, e.target.value as EntryStatus)
+									}
+								>
+									{ENTRY_STATUSES.map((status) => (
+										<option key={status} value={status}>
+											{status}
+										</option>
+									))}
+								</select>
+								<select
+									value={entry.rating ?? ''}
+									onChange={(e) => handleRatingChange(entry, e.target.value)}
+									aria-label="Rating"
+								>
+									<option value="">Unrated</option>
+									{RATING_OPTIONS.map((rating) => (
+										<option key={rating} value={rating}>
+											{rating}/10
+										</option>
+									))}
+								</select>
+								<input
+									type="number"
+									className="entry-list__year-input"
+									placeholder="Year played"
+									aria-label="Year played"
+									min={1970}
+									max={new Date().getFullYear() + 1}
+									defaultValue={entry.year_played ?? ''}
+									onBlur={(e) => handleYearPlayedChange(entry, e.target.value)}
 								/>
-							)}
-							<span>{entry.game.title}</span>
-							<select
-								value={entry.status}
-								onChange={(e) =>
-									handleStatusChange(entry, e.target.value as EntryStatus)
-								}
-							>
-								{ENTRY_STATUSES.map((status) => (
-									<option key={status} value={status}>
-										{status}
-									</option>
-								))}
-							</select>
-							<select
-								value={entry.rating ?? ''}
-								onChange={(e) => handleRatingChange(entry, e.target.value)}
-								aria-label="Rating"
-							>
-								<option value="">Unrated</option>
-								{RATING_OPTIONS.map((rating) => (
-									<option key={rating} value={rating}>
-										{rating}/10
-									</option>
-								))}
-							</select>
-							<input
-								type="number"
-								className="entry-list__year-input"
-								placeholder="Year played"
-								aria-label="Year played"
-								min={1970}
-								max={new Date().getFullYear() + 1}
-								defaultValue={entry.year_played ?? ''}
-								onBlur={(e) => handleYearPlayedChange(entry, e.target.value)}
-							/>
-							<button onClick={() => handleDelete(entry)}>
-								<Trash2 size={14} /> Remove
-							</button>
+								<button onClick={() => handleDelete(entry)}>
+									<Trash2 size={14} /> Remove
+								</button>
+							</div>
 						</li>
 					))}
 				</ul>

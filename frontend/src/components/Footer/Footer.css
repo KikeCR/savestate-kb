@@ -43,3 +43,9 @@
 	margin: 0;
 	text-align: right;
 }
+
+@media (max-width: 640px) {
+	.footer__credit {
+		text-align: left;
+	}
+}

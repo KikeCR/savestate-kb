@@ -122,6 +122,12 @@ h1 {
 	font-size: var(--font-size-3xl);
 }
 
+@media (max-width: 640px) {
+	h1 {
+		font-size: var(--font-size-2xl);
+	}
+}
+
 h2 {
 	font-size: var(--font-size-xl);
 }

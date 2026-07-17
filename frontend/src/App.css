@@ -16,3 +16,9 @@
 	display: flex;
 	justify-content: flex-end;
 }
+
+@media (max-width: 640px) {
+	.app {
+		padding: 1.25rem 1rem;
+	}
+}
