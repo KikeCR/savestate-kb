@@ -1,1 +1,112 @@
-# savestate-kb
+# SaveState
+
+A multi-user game completion tracker — a Backloggery/Grouvee-style app for tracking your backlog, in-progress, and completed games. Search for a game, drag it around a Kanban board as your status changes, rate it, and see it on your public profile and the site-wide activity feed.
+
+Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stack.
+
+## Features
+
+- **Auth** — session/cookie-based (Flask-Login), not JWT
+- **Game search** — backed by the [RAWG](https://rawg.io) API, cached in Postgres and Redis so repeat lookups don't hit RAWG's rate limit
+- **Kanban board** — drag-and-drop across Backlog / Playing / Completed / Dropped / Replaying
+- **Full tracking data** — rating, hours played, dates, notes, favorites, replay count, platform, tags
+- **Leaderboards** — Redis sorted sets: most games completed this year, highest average rating given
+- **Activity feed** — a live-updating "X just completed Y" feed, backed by a Redis list
+- **Public profiles** — shareable, with a visibility toggle (public/private) and a stats dashboard (genre breakdown, rating distribution, completions per year)
+
+## Stack
+
+| Layer | Choice |
+|---|---|
+| Frontend | React (Vite) + TypeScript, functional components + hooks |
+| Backend | Flask, application factory pattern |
+| ORM | SQLAlchemy via Flask-SQLAlchemy, migrations via Flask-Migrate |
+| Auth | Flask-Login, session/cookie-based |
+| Database | PostgreSQL 16 |
+| Cache / real-time | Redis 7 |
+| External data | [RAWG API](https://rawg.io/apidocs) for game metadata |
+| Containerization | Docker Compose (`db`, `redis`, `backend`, `frontend`) |
+
+## Prerequisites
+
+- Docker and Docker Compose
+- A free [RAWG API key](https://rawg.io/apidocs) — required for game search to actually return anything beyond what's already cached locally
+
+## Setup
+
+1. **Clone and configure environment variables**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit `.env` and set:
+   - `SECRET_KEY` — any random string (used to sign Flask session cookies)
+   - `RAWG_API_KEY` — your key from [rawg.io/apidocs](https://rawg.io/apidocs)
+
+   The Postgres credentials in `.env.example` are fine for local development as-is.
+
+2. **Start everything**
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+   This boots four containers: `db` (Postgres), `redis`, `backend` (Flask, port `5001`), `frontend` (Vite dev server, port `5173`).
+
+3. **Run database migrations**
+
+   ```bash
+   docker compose exec backend flask db upgrade
+   ```
+
+4. **Open the app**
+
+   - Frontend: http://localhost:5173
+   - Backend health check: http://localhost:5001/health (confirms both Postgres and Redis are reachable)
+
+### Ports
+
+The backend is mapped to host port **5001**, not 5000 — on macOS, port 5000 is commonly claimed by the AirPlay Receiver (ControlCenter). The frontend's `VITE_API_URL` in `docker-compose.yml` points at `5001` accordingly.
+
+## Development notes
+
+- **Editor tooling needs a local `npm install` too.** The frontend container's `node_modules` lives in a Docker-only anonymous volume — it never syncs back to the host, so your editor's TypeScript server won't resolve anything until you also run `npm install` inside `frontend/` on your host machine.
+- **Changing `.env` requires recreating the backend container, not just restarting it.** `docker compose restart backend` reuses the container's existing (stale) environment. After editing `.env`, run `docker compose up -d backend` instead, which recreates the container and re-reads `env_file`.
+- **Database migrations**: after changing a model, generate a migration and apply it:
+
+  ```bash
+  docker compose exec backend flask db migrate -m "describe the change"
+  docker compose exec backend flask db upgrade
+  ```
+
+- **Frontend tooling**: TypeScript strict mode, Prettier (no semicolons, single quotes, tabs — see `.prettierrc`), no ESLint. Useful commands from `frontend/`:
+
+  ```bash
+  npm run format        # prettier --write
+  npm run format:check  # prettier --check
+  npx tsc -b             # typecheck (not wired into `npm run build` — matches this repo's convention)
+  ```
+
+## Project structure
+
+```
+backend/
+  app/
+    models/       # User, Game, UserGameEntry (SQLAlchemy)
+    routes/       # auth, games, entries, leaderboards, activity, users
+    services/     # RAWG API client, Redis leaderboards, Redis activity feed
+  migrations/      # Flask-Migrate / Alembic
+
+frontend/
+  src/
+    api/          # typed fetch client
+    components/   # StatusBadge, GameCard, BarChart, NavBar, kanban/, ...
+    context/       # AuthContext
+    pages/        # Home, Login, Register, Dashboard, Library, Board,
+                   # Leaderboards, Activity, Profile
+```
+
+## Data attribution
+
+Game data (titles, cover art, platforms, genres, release dates) is provided by the [RAWG Video Games Database API](https://rawg.io).
