@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import { Footer } from './components/Footer'
 import { NavBar } from './components/NavBar'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { ThemeToggle } from './components/ThemeToggle'
 import { Activity } from './pages/Activity'
 import { Board } from './pages/Board'
 import { Dashboard } from './pages/Dashboard'
@@ -15,6 +16,9 @@ import { Register } from './pages/Register'
 export const App = () => {
 	return (
 		<div className="app">
+			<div className="top-bar">
+				<ThemeToggle />
+			</div>
 			<NavBar />
 			<Routes>
 				<Route path="/" element={<Home />} />
