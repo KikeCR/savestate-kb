@@ -33,3 +33,14 @@
 	padding: 0.35rem 0.75rem;
 	font-size: var(--font-size-sm);
 }
+
+@media (max-width: 640px) {
+	.nav-bar {
+		gap: 0.75rem;
+	}
+
+	.nav-bar a span,
+	.nav-bar button span {
+		display: none;
+	}
+}

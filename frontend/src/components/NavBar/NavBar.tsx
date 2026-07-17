@@ -5,6 +5,7 @@ import {
 	Library as LibraryIcon,
 	LogOut,
 	Trophy,
+	User,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
@@ -23,27 +24,31 @@ export const NavBar = () => {
 
 	return (
 		<nav className="nav-bar">
-			<Link to="/dashboard">
-				<LayoutDashboard size={16} /> Dashboard
+			<Link to="/dashboard" aria-label="Dashboard">
+				<LayoutDashboard size={16} /> <span>Dashboard</span>
 			</Link>
-			<Link to="/library">
-				<LibraryIcon size={16} /> Library
+			<Link to="/library" aria-label="Library">
+				<LibraryIcon size={16} /> <span>Library</span>
 			</Link>
-			<Link to="/board">
-				<KanbanSquare size={16} /> Board
+			<Link to="/board" aria-label="Board">
+				<KanbanSquare size={16} /> <span>Board</span>
 			</Link>
-			<Link to="/leaderboards">
-				<Trophy size={16} /> Leaderboards
+			<Link to="/leaderboards" aria-label="Leaderboards">
+				<Trophy size={16} /> <span>Leaderboards</span>
 			</Link>
-			<Link to="/activity">
-				<ActivityIcon size={16} /> Activity
+			<Link to="/activity" aria-label="Activity">
+				<ActivityIcon size={16} /> <span>Activity</span>
 			</Link>
 			<span className="nav-bar__spacer" />
-			<Link to={`/profile/${user.username}`} className="nav-bar__user">
-				{user.username}
+			<Link
+				to={`/profile/${user.username}`}
+				className="nav-bar__user"
+				aria-label={user.username}
+			>
+				<User size={16} /> <span>{user.username}</span>
 			</Link>
-			<button onClick={handleLogout}>
-				<LogOut size={14} /> Log out
+			<button onClick={handleLogout} aria-label="Log out">
+				<LogOut size={14} /> <span>Log out</span>
 			</button>
 		</nav>
 	)
