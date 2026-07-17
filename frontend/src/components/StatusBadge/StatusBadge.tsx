@@ -1,4 +1,5 @@
-import { STATUS_LABELS, type EntryStatus } from '../types'
+import { STATUS_LABELS, type EntryStatus } from '../../types'
+import './StatusBadge.css'
 
 export const StatusBadge = ({ status }: { status: EntryStatus }) => {
 	return (

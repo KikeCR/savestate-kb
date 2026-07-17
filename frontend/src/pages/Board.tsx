@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
 	DndContext,
 	DragOverlay,
@@ -11,7 +11,10 @@ import {
 import { api } from '../api/client'
 import { GameCard } from '../components/GameCard'
 import { KanbanColumn } from '../components/kanban/KanbanColumn'
+import { YearSelect } from '../components/YearSelect'
+import { useAvailableYears } from '../hooks/useAvailableYears'
 import { ENTRY_STATUSES, type Entry, type EntryStatus } from '../types'
+import './Board.css'
 
 export const Board = () => {
 	const [entries, setEntries] = useState<Entry[]>([])
@@ -33,17 +36,7 @@ export const Board = () => {
 		)
 	}, [])
 
-	const availableYears = useMemo(
-		() =>
-			Array.from(
-				new Set(
-					entries
-						.map((entry) => entry.year_played)
-						.filter((year): year is number => year != null),
-				),
-			).sort((a, b) => b - a),
-		[entries],
-	)
+	const availableYears = useAvailableYears(entries)
 
 	// Backlog games haven't been played yet, so a "year played" filter never
 	// hides them — it only narrows the columns that represent actual play.
@@ -88,17 +81,16 @@ export const Board = () => {
 				{availableYears.length > 0 && (
 					<label className="year-filter">
 						Year played
-						<select
+						<YearSelect
 							value={yearFilter}
-							onChange={(e) => setYearFilter(e.target.value)}
-						>
-							<option value="all">All years</option>
-							{availableYears.map((year) => (
-								<option key={year} value={year}>
-									{year}
-								</option>
-							))}
-						</select>
+							onValueChange={setYearFilter}
+							options={availableYears.map((year) => ({
+								value: String(year),
+								label: String(year),
+							}))}
+							includeAllOption
+							ariaLabel="Year played filter"
+						/>
 					</label>
 				)}
 			</div>

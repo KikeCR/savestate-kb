@@ -1,0 +1,14 @@
+.visibility-toggle {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	margin: 1rem 0;
+}
+
+.visibility-toggle label {
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+	font-size: var(--font-size-sm);
+	cursor: pointer;
+}

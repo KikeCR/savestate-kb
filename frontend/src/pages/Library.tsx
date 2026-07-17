@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Plus, Search, Trash2 } from 'lucide-react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { api } from '../api/client'
+import { YearSelect } from '../components/YearSelect'
+import { useAvailableYears } from '../hooks/useAvailableYears'
+import './Library.css'
 import {
 	ENTRY_STATUSES,
 	type Entry,
@@ -28,17 +32,7 @@ export const Library = () => {
 		)
 	}, [])
 
-	const availableYears = useMemo(
-		() =>
-			Array.from(
-				new Set(
-					entries
-						.map((entry) => entry.year_played)
-						.filter((year): year is number => year != null),
-				),
-			).sort((a, b) => b - a),
-		[entries],
-	)
+	const availableYears = useAvailableYears(entries)
 
 	const visibleEntries =
 		yearFilter === 'all'
@@ -109,7 +103,7 @@ export const Library = () => {
 					placeholder="Search for a game..."
 				/>
 				<button type="submit" disabled={searching}>
-					{searching ? 'Searching...' : 'Search'}
+					<Search size={14} /> {searching ? 'Searching...' : 'Search'}
 				</button>
 			</form>
 
@@ -123,7 +117,9 @@ export const Library = () => {
 								<img src={game.cover_image_url} alt={game.title} width={40} />
 							)}
 							<span>{game.title}</span>
-							<button onClick={() => handleAdd(game)}>Add to library</button>
+							<button onClick={() => handleAdd(game)}>
+								<Plus size={14} /> Add to library
+							</button>
 						</li>
 					))}
 				</ul>
@@ -134,17 +130,16 @@ export const Library = () => {
 				{availableYears.length > 0 && (
 					<label className="year-filter">
 						Year played
-						<select
+						<YearSelect
 							value={yearFilter}
-							onChange={(e) => setYearFilter(e.target.value)}
-						>
-							<option value="all">All years</option>
-							{availableYears.map((year) => (
-								<option key={year} value={year}>
-									{year}
-								</option>
-							))}
-						</select>
+							onValueChange={setYearFilter}
+							options={availableYears.map((year) => ({
+								value: String(year),
+								label: String(year),
+							}))}
+							includeAllOption
+							ariaLabel="Year played filter"
+						/>
 					</label>
 				)}
 			</div>
@@ -197,7 +192,9 @@ export const Library = () => {
 								defaultValue={entry.year_played ?? ''}
 								onBlur={(e) => handleYearPlayedChange(entry, e.target.value)}
 							/>
-							<button onClick={() => handleDelete(entry)}>Remove</button>
+							<button onClick={() => handleDelete(entry)}>
+								<Trash2 size={14} /> Remove
+							</button>
 						</li>
 					))}
 				</ul>

@@ -1,478 +1,178 @@
 :root {
+	color-scheme: light;
+
+	/* Status colors stay constant across themes — they're semantic (backlog/
+	   playing/etc.), not surface-dependent, and already carry enough contrast
+	   against white text on both light and dark backgrounds. */
 	--color-status-backlog: #6b7280;
 	--color-status-playing: #2563eb;
 	--color-status-completed: #16a34a;
 	--color-status-dropped: #dc2626;
 	--color-status-replaying: #9333ea;
 
+	--color-accent: #2563eb;
+	--color-accent-bg: #eff6ff;
+
+	--color-bg: #ffffff;
+	--color-surface: #ffffff;
+	--color-surface-alt: #f4f4f4;
+	--color-surface-sunken: #f9fafb;
+
+	--color-text: #1a1a1a;
+	--color-text-secondary: #555555;
+	--color-text-muted: #898781;
+
+	--color-border: #e5e7eb;
+	--color-border-subtle: #eeeeee;
+	--color-input-border: #cccccc;
+
+	--color-error-text: #b00020;
+	--color-error-bg: #fdecea;
+
 	--chart-bar: #2a78d6;
 	--chart-track: #e1e0d9;
-	--chart-text-secondary: #52514e;
-	--chart-text-muted: #898781;
+
+	/* Type scale — sizes/weights/line-heights aren't theme-dependent, so this
+	   block doesn't need a .dark counterpart. */
+	--font-size-xs: 0.75rem;
+	--font-size-sm: 0.85rem;
+	--font-size-base: 1rem;
+	--font-size-lg: 1.1rem;
+	--font-size-xl: 1.3rem;
+	--font-size-2xl: 1.6rem;
+	--font-size-3xl: 2rem;
+
+	--font-weight-normal: 400;
+	--font-weight-medium: 500;
+	--font-weight-semibold: 600;
+	--font-weight-bold: 700;
+
+	--line-height-tight: 1.2;
+	--line-height-normal: 1.5;
+
+	--radius-sm: 4px;
+	--radius-md: 8px;
+	--radius-lg: 12px;
+
+	--shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 10px rgba(0, 0, 0, 0.06);
+}
+
+.dark {
+	color-scheme: dark;
+
+	--shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.35);
+
+	--color-accent: #3987e5;
+	--color-accent-bg: #16223a;
+
+	--color-bg: #141414;
+	--color-surface: #1e1e1e;
+	--color-surface-alt: #292929;
+	--color-surface-sunken: #1a1a1a;
+
+	--color-text: #f5f5f5;
+	--color-text-secondary: #b3b3b3;
+	--color-text-muted: #8a8a8a;
+
+	--color-border: #333333;
+	--color-border-subtle: #2a2a2a;
+	--color-input-border: #444444;
+
+	--color-error-text: #ff6b81;
+	--color-error-bg: #3a1420;
+
+	--chart-bar: #3987e5;
+	--chart-track: #3a3a38;
 }
 
 body {
-	font-family: system-ui, sans-serif;
-	max-width: 1100px;
-	margin: 2rem auto;
-	padding: 0 1rem;
-	color: #1a1a1a;
+	margin: 0;
+	font-family: 'Manrope Variable', system-ui, sans-serif;
+	font-size: var(--font-size-base);
+	line-height: var(--line-height-normal);
+	background: var(--color-bg);
+	color: var(--color-text);
+	transition:
+		background-color 0.15s ease,
+		color 0.15s ease;
+}
+
+/* YearSelect (Radix) locks body scroll while open, rewriting body's margin
+   and padding (in px, computed from our auto-centering) to compensate for
+   the scrollbar it hides. Even a partial override of that leaves a residual
+   shift, so we just restore body to its resting state entirely: nothing
+   here is a true modal, so page scroll doesn't need to be locked anyway. */
+html body[data-scroll-locked] {
+	overflow: visible !important;
+	overscroll-behavior: auto !important;
+	position: static !important;
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
+h1,
+h2,
+h3 {
+	font-weight: var(--font-weight-bold);
+	line-height: var(--line-height-tight);
+	letter-spacing: -0.01em;
+}
+
+h1 {
+	font-size: var(--font-size-3xl);
+}
+
+h2 {
+	font-size: var(--font-size-xl);
+}
+
+h3 {
+	font-size: var(--font-size-lg);
+}
+
+input,
+select,
+textarea {
+	font-family: inherit;
+	font-size: var(--font-size-base);
+	background: var(--color-surface);
+	color: var(--color-text);
+	border: 1px solid var(--color-input-border);
+	border-radius: var(--radius-sm);
+}
+
+button {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	font-family: inherit;
+	font-size: var(--font-size-base);
+	font-weight: var(--font-weight-medium);
+	background: var(--color-surface);
+	color: var(--color-text);
+	border: 1px solid var(--color-input-border);
+	border-radius: var(--radius-sm);
+	cursor: pointer;
+}
+
+button:hover {
+	background: var(--color-surface-alt);
+}
+
+a {
+	color: var(--color-accent);
 }
 
 pre {
-	background: #f4f4f4;
+	background: var(--color-surface-alt);
 	padding: 1rem;
-	border-radius: 6px;
+	border-radius: var(--radius-md);
 	overflow-x: auto;
 }
 
 .error {
-	color: #b00020;
-	background: #fdecea;
+	color: var(--color-error-text);
+	background: var(--color-error-bg);
 	padding: 0.5rem 0.75rem;
-	border-radius: 6px;
-}
-
-.auth-form form {
-	display: flex;
-	flex-direction: column;
-	gap: 1rem;
-	max-width: 320px;
-}
-
-.auth-form label {
-	display: flex;
-	flex-direction: column;
-	gap: 0.25rem;
-	font-size: 0.9rem;
-}
-
-.auth-form input {
-	padding: 0.5rem;
-	font-size: 1rem;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-}
-
-.auth-form button {
-	padding: 0.5rem 1rem;
-	font-size: 1rem;
-	cursor: pointer;
-}
-
-.search-form {
-	display: flex;
-	gap: 0.5rem;
-	margin-bottom: 1rem;
-}
-
-.search-form input {
-	flex: 1;
-	padding: 0.5rem;
-	font-size: 1rem;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-}
-
-.search-form button {
-	padding: 0.5rem 1rem;
-	font-size: 1rem;
-	cursor: pointer;
-}
-
-.search-results,
-.entry-list {
-	list-style: none;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.search-results li,
-.entry-list li {
-	display: flex;
-	align-items: center;
-	gap: 0.75rem;
-	padding: 0.5rem;
-	border: 1px solid #eee;
-	border-radius: 6px;
-}
-
-.search-results li span,
-.entry-list li span:first-of-type {
-	flex: 1;
-}
-
-.search-results img,
-.entry-list img {
-	border-radius: 4px;
-	object-fit: cover;
-}
-
-.entry-list__year-input {
-	width: 90px;
-	padding: 0.3rem;
-	font-size: 0.9rem;
-	border: 1px solid #ccc;
-	border-radius: 4px;
-}
-
-.page-header-row {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 1rem;
-	flex-wrap: wrap;
-}
-
-.year-filter {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	font-size: 0.85rem;
-	color: #555;
-}
-
-.nav-bar {
-	display: flex;
-	align-items: center;
-	gap: 1.25rem;
-	padding: 0.75rem 0;
-	margin-bottom: 1.5rem;
-	border-bottom: 1px solid #e5e7eb;
-}
-
-.nav-bar a {
-	font-weight: 500;
-	color: #1a1a1a;
-	text-decoration: none;
-}
-
-.nav-bar a:hover {
-	text-decoration: underline;
-}
-
-.nav-bar__spacer {
-	flex: 1;
-}
-
-.nav-bar__user {
-	font-size: 0.85rem;
-	color: #555;
-}
-
-.nav-bar button {
-	padding: 0.35rem 0.75rem;
-	font-size: 0.9rem;
-	cursor: pointer;
-}
-
-.status-badge {
-	display: inline-block;
-	padding: 0.15rem 0.5rem;
-	border-radius: 999px;
-	font-size: 0.7rem;
-	font-weight: 600;
-	color: white;
-	white-space: nowrap;
-}
-
-.status-badge--backlog {
-	background: var(--color-status-backlog);
-}
-
-.status-badge--playing {
-	background: var(--color-status-playing);
-}
-
-.status-badge--completed {
-	background: var(--color-status-completed);
-}
-
-.status-badge--dropped {
-	background: var(--color-status-dropped);
-}
-
-.status-badge--replaying {
-	background: var(--color-status-replaying);
-}
-
-.game-card {
-	background: white;
-	border: 1px solid #e5e7eb;
-	border-radius: 6px;
-	overflow: hidden;
-	display: flex;
-	flex-direction: column;
-}
-
-.game-card--dragging {
-	opacity: 0.5;
-}
-
-.game-card__cover img,
-.game-card__cover-placeholder {
-	width: 100%;
-	height: 100px;
-	object-fit: cover;
-	background: #e5e7eb;
-	display: block;
-}
-
-.game-card__body {
-	padding: 0.5rem;
-	display: flex;
-	flex-direction: column;
-	gap: 0.35rem;
-}
-
-.game-card__title {
-	font-size: 0.85rem;
-	font-weight: 600;
-	margin: 0;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.game-card__meta {
-	display: flex;
-	align-items: center;
-	gap: 0.4rem;
-	font-size: 0.75rem;
-}
-
-.game-card__rating {
-	color: #b45309;
-}
-
-.game-card__favorite {
-	color: #dc2626;
-}
-
-.kanban-board {
-	display: flex;
-	gap: 1rem;
-	overflow-x: auto;
-	padding-bottom: 1rem;
-}
-
-.kanban-column {
-	flex: 0 0 230px;
-	background: #f9fafb;
-	border: 2px solid transparent;
-	border-radius: 8px;
-	padding: 0.75rem;
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-	min-height: 200px;
-}
-
-.kanban-column--over {
-	border-color: #2563eb;
-	background: #eff6ff;
-}
-
-.kanban-column__header {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-}
-
-.kanban-column__header h2 {
-	font-size: 0.9rem;
-	margin: 0;
-}
-
-.kanban-column__count {
-	background: #e5e7eb;
-	border-radius: 999px;
-	padding: 0.1rem 0.5rem;
-	font-size: 0.75rem;
-}
-
-.kanban-column__cards {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-	min-height: 40px;
-}
-
-.kanban-card-wrapper {
-	touch-action: none;
-	cursor: grab;
-}
-
-.kanban-card-wrapper--dragging {
-	cursor: grabbing;
-}
-
-.leaderboard-columns {
-	display: flex;
-	gap: 2rem;
-	flex-wrap: wrap;
-}
-
-.leaderboard-columns section {
-	flex: 1 1 260px;
-}
-
-.leaderboard-section-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 1rem;
-}
-
-.leaderboard-list {
-	list-style: decimal;
-	padding-left: 1.5rem;
-	display: flex;
-	flex-direction: column;
-	gap: 0.4rem;
-}
-
-.leaderboard-list li {
-	display: flex;
-	justify-content: space-between;
-	gap: 1rem;
-	padding: 0.3rem 0;
-	border-bottom: 1px solid #eee;
-}
-
-.activity-feed {
-	list-style: none;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.activity-feed li {
-	display: flex;
-	align-items: center;
-	gap: 0.75rem;
-	padding: 0.5rem;
-	border: 1px solid #eee;
-	border-radius: 6px;
-}
-
-.activity-feed li > span:first-of-type {
-	flex: 1;
-}
-
-.activity-feed img,
-.activity-feed__cover-placeholder {
-	width: 32px;
-	height: 32px;
-	border-radius: 4px;
-	object-fit: cover;
-	background: #e5e7eb;
-	flex-shrink: 0;
-}
-
-.activity-feed__time {
-	font-size: 0.75rem;
-	color: #777;
-	white-space: nowrap;
-}
-
-.bar-chart {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-}
-
-.bar-chart__row {
-	display: grid;
-	grid-template-columns: 110px 1fr 32px;
-	align-items: center;
-	gap: 0.5rem;
-	padding: 0.15rem 0;
-}
-
-.bar-chart__label {
-	font-size: 0.8rem;
-	color: var(--chart-text-secondary);
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.bar-chart__track {
-	background: var(--chart-track);
-	border-radius: 4px;
-	height: 16px;
-	overflow: hidden;
-}
-
-.bar-chart__bar {
-	background: var(--chart-bar);
-	height: 100%;
-	border-radius: 0 4px 4px 0;
-}
-
-.bar-chart__value {
-	font-size: 0.8rem;
-	color: var(--chart-text-muted);
-	text-align: right;
-	font-variant-numeric: tabular-nums;
-}
-
-.bar-chart__empty {
-	color: var(--chart-text-muted);
-	font-size: 0.85rem;
-}
-
-.stats-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-	gap: 1.5rem;
-	margin-bottom: 2rem;
-}
-
-.stats-grid h3 {
-	font-size: 0.95rem;
-	margin-bottom: 0.5rem;
-}
-
-.game-card-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-	gap: 1rem;
-}
-
-.profile-meta {
-	color: var(--chart-text-muted);
-	font-size: 0.9rem;
-}
-
-.visibility-toggle {
-	display: flex;
-	align-items: center;
-	gap: 1rem;
-	margin: 1rem 0;
-}
-
-.visibility-toggle label {
-	display: flex;
-	align-items: center;
-	gap: 0.3rem;
-	font-size: 0.9rem;
-	cursor: pointer;
-}
-
-.footer {
-	margin-top: 3rem;
-	padding-top: 1rem;
-	border-top: 1px solid #e5e7eb;
-	font-size: 0.8rem;
-	color: #777;
-	text-align: center;
-}
-
-.footer a {
-	color: inherit;
+	border-radius: var(--radius-md);
 }

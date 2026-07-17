@@ -1,0 +1,35 @@
+.nav-bar {
+	display: flex;
+	align-items: center;
+	gap: 1.25rem;
+	padding: 0.75rem 0;
+	margin-bottom: 1.5rem;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.nav-bar a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	font-weight: var(--font-weight-medium);
+	color: var(--color-text);
+	text-decoration: none;
+}
+
+.nav-bar a:hover {
+	text-decoration: underline;
+}
+
+.nav-bar__spacer {
+	flex: 1;
+}
+
+.nav-bar__user {
+	font-size: var(--font-size-sm);
+	color: var(--color-text-secondary);
+}
+
+.nav-bar button {
+	padding: 0.35rem 0.75rem;
+	font-size: var(--font-size-sm);
+}

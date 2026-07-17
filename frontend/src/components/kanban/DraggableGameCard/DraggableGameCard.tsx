@@ -1,7 +1,8 @@
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import type { Entry } from '../../types'
-import { GameCard } from '../GameCard'
+import type { Entry } from '../../../types'
+import { GameCard } from '../../GameCard'
+import './DraggableGameCard.css'
 
 export const DraggableGameCard = ({ entry }: { entry: Entry }) => {
 	const { attributes, listeners, setNodeRef, transform, isDragging } =

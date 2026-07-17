@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
+import { YearSelect } from '../components/YearSelect'
 import type { LeaderboardEntry } from '../types'
+import './Leaderboards.css'
 
 const CURRENT_YEAR = new Date().getFullYear()
 const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => CURRENT_YEAR - i)
@@ -39,16 +41,15 @@ export const Leaderboards = () => {
 				<section>
 					<div className="leaderboard-section-header">
 						<h2>Most completed</h2>
-						<select
-							value={year}
-							onChange={(e) => setYear(Number(e.target.value))}
-						>
-							{YEAR_OPTIONS.map((y) => (
-								<option key={y} value={y}>
-									{y}
-								</option>
-							))}
-						</select>
+						<YearSelect
+							value={String(year)}
+							onValueChange={(value) => setYear(Number(value))}
+							options={YEAR_OPTIONS.map((y) => ({
+								value: String(y),
+								label: String(y),
+							}))}
+							ariaLabel="Leaderboard year"
+						/>
 					</div>
 					{completions.length === 0 ? (
 						<p>No completions in {year}.</p>

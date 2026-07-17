@@ -1,5 +1,7 @@
-import type { Entry } from '../types'
-import { StatusBadge } from './StatusBadge'
+import { Heart, Star } from 'lucide-react'
+import type { Entry } from '../../types'
+import './GameCard.css'
+import { StatusBadge } from '../StatusBadge'
 
 interface GameCardProps {
 	entry: Entry
@@ -23,11 +25,13 @@ export const GameCard = ({ entry, dragging = false }: GameCardProps) => {
 				<div className="game-card__meta">
 					<StatusBadge status={entry.status} />
 					{entry.rating != null && (
-						<span className="game-card__rating">★ {entry.rating}/10</span>
+						<span className="game-card__rating">
+							<Star size={12} /> {entry.rating}/10
+						</span>
 					)}
 					{entry.favorite && (
 						<span className="game-card__favorite" title="Favorite">
-							♥
+							<Heart size={12} />
 						</span>
 					)}
 				</div>

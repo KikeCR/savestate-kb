@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import './Dashboard.css'
 
 export const Dashboard = () => {
 	const { user, updateProfileVisibility } = useAuth()

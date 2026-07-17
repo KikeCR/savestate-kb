@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { ActivityEvent } from '../types'
+import './Activity.css'
 
 const renderMessage = (event: ActivityEvent) => {
 	switch (event.action) {

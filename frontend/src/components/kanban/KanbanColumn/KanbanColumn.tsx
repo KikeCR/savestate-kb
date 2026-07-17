@@ -1,6 +1,7 @@
 import { useDroppable } from '@dnd-kit/core'
-import { STATUS_LABELS, type Entry, type EntryStatus } from '../../types'
-import { DraggableGameCard } from './DraggableGameCard'
+import { STATUS_LABELS, type Entry, type EntryStatus } from '../../../types'
+import { DraggableGameCard } from '../DraggableGameCard'
+import './KanbanColumn.css'
 
 interface KanbanColumnProps {
 	status: EntryStatus

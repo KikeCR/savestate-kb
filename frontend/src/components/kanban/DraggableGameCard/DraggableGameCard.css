@@ -1,0 +1,8 @@
+.kanban-card-wrapper {
+	touch-action: none;
+	cursor: grab;
+}
+
+.kanban-card-wrapper--dragging {
+	cursor: grabbing;
+}

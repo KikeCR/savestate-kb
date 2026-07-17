@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { BarChart } from '../components/BarChart'
 import { GameCard } from '../components/GameCard'
 import type { ProfileResponse } from '../types'
+import './Profile.css'
 
 export const Profile = () => {
 	const { username } = useParams<{ username: string }>()
