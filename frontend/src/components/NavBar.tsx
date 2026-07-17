@@ -17,6 +17,8 @@ export const NavBar = () => {
 			<Link to="/dashboard">Dashboard</Link>
 			<Link to="/library">Library</Link>
 			<Link to="/board">Board</Link>
+			<Link to="/leaderboards">Leaderboards</Link>
+			<Link to="/activity">Activity</Link>
 			<span className="nav-bar__spacer" />
 			<span className="nav-bar__user">{user.username}</span>
 			<button onClick={handleLogout}>Log out</button>

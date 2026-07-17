@@ -21,14 +21,18 @@ def create_app(config_class=Config):
     def unauthorized():
         return jsonify({"error": "authentication required"}), 401
 
+    from app.routes.activity import activity_bp
     from app.routes.auth import auth_bp
     from app.routes.entries import entries_bp
     from app.routes.games import games_bp
     from app.routes.health import health_bp
+    from app.routes.leaderboards import leaderboards_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(games_bp)
     app.register_blueprint(entries_bp)
+    app.register_blueprint(leaderboards_bp)
+    app.register_blueprint(activity_bp)
 
     return app

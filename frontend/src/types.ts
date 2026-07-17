@@ -51,3 +51,27 @@ export interface Entry {
 	created_at: string
 	updated_at: string
 }
+
+export interface PublicUser {
+	id: number
+	username: string
+	profile_visibility: 'public' | 'private'
+	created_at: string
+}
+
+export interface LeaderboardEntry {
+	user: PublicUser
+	score: number
+}
+
+export type ActivityAction = 'added' | 'completed'
+
+export interface ActivityEvent {
+	user_id: number
+	username: string
+	game_id: number
+	game_title: string
+	game_cover_image_url: string | null
+	action: ActivityAction
+	created_at: string
+}

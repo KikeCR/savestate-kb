@@ -1,8 +1,10 @@
 import { Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { Activity } from './pages/Activity'
 import { Board } from './pages/Board'
 import { Dashboard } from './pages/Dashboard'
 import { Home } from './pages/Home'
+import { Leaderboards } from './pages/Leaderboards'
 import { Library } from './pages/Library'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
@@ -35,6 +37,22 @@ export const App = () => {
 					element={
 						<ProtectedRoute>
 							<Board />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/leaderboards"
+					element={
+						<ProtectedRoute>
+							<Leaderboards />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/activity"
+					element={
+						<ProtectedRoute>
+							<Activity />
 						</ProtectedRoute>
 					}
 				/>

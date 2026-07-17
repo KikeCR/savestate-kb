@@ -6,6 +6,8 @@ from flask_login import current_user, login_required
 from app.extensions import db
 from app.models.game import Game
 from app.models.user_game_entry import STATUS_VALUES, UserGameEntry
+from app.services import leaderboards
+from app.services.activity import record_activity
 
 entries_bp = Blueprint("entries", __name__, url_prefix="/api/entries")
 
@@ -93,6 +95,14 @@ def create_entry():
     )
     db.session.add(entry)
     db.session.commit()
+
+    record_activity(current_user, game, "added")
+    if entry.status == "completed":
+        leaderboards.record_completion(current_user.id, entry.completion_date)
+        record_activity(current_user, game, "completed")
+    if entry.rating is not None:
+        leaderboards.refresh_avg_rating(current_user.id)
+
     return jsonify(entry.to_dict()), 201
 
 
@@ -113,6 +123,7 @@ def update_entry(entry_id):
         return jsonify({"error": "not found"}), 404
 
     data = request.get_json(silent=True) or {}
+    old_status = entry.status
 
     if "status" in data:
         if data["status"] not in STATUS_VALUES:
@@ -156,6 +167,17 @@ def update_entry(entry_id):
         entry.tags = data["tags"] or []
 
     db.session.commit()
+
+    if "status" in data and entry.status != old_status:
+        if entry.status == "completed":
+            leaderboards.record_completion(current_user.id, entry.completion_date)
+            record_activity(current_user, entry.game, "completed")
+        elif old_status == "completed":
+            leaderboards.remove_completion(current_user.id, entry.completion_date)
+
+    if "rating" in data:
+        leaderboards.refresh_avg_rating(current_user.id)
+
     return jsonify(entry.to_dict())
 
 
@@ -165,6 +187,17 @@ def delete_entry(entry_id):
     entry = _entry_or_404(entry_id)
     if not entry:
         return jsonify({"error": "not found"}), 404
+
+    was_completed = entry.status == "completed"
+    completion_date = entry.completion_date
+    had_rating = entry.rating is not None
+
     db.session.delete(entry)
     db.session.commit()
+
+    if was_completed:
+        leaderboards.remove_completion(current_user.id, completion_date)
+    if had_rating:
+        leaderboards.refresh_avg_rating(current_user.id)
+
     return "", 204
