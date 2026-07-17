@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { Board } from './pages/Board'
 import { Dashboard } from './pages/Dashboard'
 import { Home } from './pages/Home'
 import { Library } from './pages/Library'
@@ -26,6 +27,14 @@ export const App = () => {
 					element={
 						<ProtectedRoute>
 							<Library />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/board"
+					element={
+						<ProtectedRoute>
+							<Board />
 						</ProtectedRoute>
 					}
 				/>

@@ -17,6 +17,14 @@ export const ENTRY_STATUSES: EntryStatus[] = [
 	'replaying',
 ]
 
+export const STATUS_LABELS: Record<EntryStatus, string> = {
+	backlog: 'Backlog',
+	playing: 'Playing',
+	completed: 'Completed',
+	dropped: 'Dropped',
+	replaying: 'Replaying',
+}
+
 export interface Game {
 	id: number
 	rawg_id: number
