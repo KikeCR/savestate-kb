@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom'
+import './App.css'
 import { Footer } from './components/Footer'
 import { NavBar } from './components/NavBar'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -20,52 +21,54 @@ export const App = () => {
 				<ThemeToggle />
 			</div>
 			<NavBar />
-			<Routes>
-				<Route path="/" element={<Home />} />
-				<Route path="/login" element={<Login />} />
-				<Route path="/register" element={<Register />} />
-				<Route path="/profile/:username" element={<Profile />} />
-				<Route
-					path="/dashboard"
-					element={
-						<ProtectedRoute>
-							<Dashboard />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/library"
-					element={
-						<ProtectedRoute>
-							<Library />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/board"
-					element={
-						<ProtectedRoute>
-							<Board />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/leaderboards"
-					element={
-						<ProtectedRoute>
-							<Leaderboards />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/activity"
-					element={
-						<ProtectedRoute>
-							<Activity />
-						</ProtectedRoute>
-					}
-				/>
-			</Routes>
+			<main className="app__content">
+				<Routes>
+					<Route path="/" element={<Home />} />
+					<Route path="/login" element={<Login />} />
+					<Route path="/register" element={<Register />} />
+					<Route path="/profile/:username" element={<Profile />} />
+					<Route
+						path="/dashboard"
+						element={
+							<ProtectedRoute>
+								<Dashboard />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/library"
+						element={
+							<ProtectedRoute>
+								<Library />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/board"
+						element={
+							<ProtectedRoute>
+								<Board />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/leaderboards"
+						element={
+							<ProtectedRoute>
+								<Leaderboards />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/activity"
+						element={
+							<ProtectedRoute>
+								<Activity />
+							</ProtectedRoute>
+						}
+					/>
+				</Routes>
+			</main>
 			<Footer />
 		</div>
 	)

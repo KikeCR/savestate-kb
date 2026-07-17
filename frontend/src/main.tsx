@@ -4,7 +4,9 @@ import { BrowserRouter } from 'react-router-dom'
 import { App } from './App'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
+import '@fontsource-variable/manrope/index.css'
 import './index.css'
+import './styles/shared.css'
 
 createRoot(document.getElementById('root') as HTMLElement).render(
 	<React.StrictMode>

@@ -1,0 +1,29 @@
+.status-badge {
+	display: inline-block;
+	padding: 0.15rem 0.5rem;
+	border-radius: 999px;
+	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-semibold);
+	color: white;
+	white-space: nowrap;
+}
+
+.status-badge--backlog {
+	background: var(--color-status-backlog);
+}
+
+.status-badge--playing {
+	background: var(--color-status-playing);
+}
+
+.status-badge--completed {
+	background: var(--color-status-completed);
+}
+
+.status-badge--dropped {
+	background: var(--color-status-dropped);
+}
+
+.status-badge--replaying {
+	background: var(--color-status-replaying);
+}

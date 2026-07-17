@@ -1,3 +1,5 @@
+import './BarChart.css'
+
 interface BarChartDatum {
 	label: string
 	value: number
