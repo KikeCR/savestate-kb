@@ -12,6 +12,12 @@ class RawgConfigError(RuntimeError):
 
 
 class RawgClient:
+    # Only catches a missing key, not an invalid one — RAWG doesn't expose a
+    # cheap "is this key valid" check, so a garbage/placeholder key (e.g. the
+    # .env.example default) passes this and only fails per-request with a 401
+    # from RAWG itself, which routes/games.py turns into a 502. Before prod,
+    # confirm search actually works end-to-end with the real key, not just
+    # that the app boots.
     def __init__(self, api_key=None):
         self.api_key = api_key or current_app.config["RAWG_API_KEY"]
         if not self.api_key:
