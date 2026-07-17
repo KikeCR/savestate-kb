@@ -2,9 +2,16 @@ from datetime import date, datetime, timezone
 
 from sqlalchemy.dialects.postgresql import ARRAY
 
+from app.constants import (
+    DEFAULT_ENTRY_STATUS,
+    ENTRY_STATUSES,
+    MIN_YEAR_PLAYED,
+    RATING_MAX,
+    RATING_MIN,
+)
 from app.extensions import db
 
-STATUS_VALUES = ["backlog", "playing", "completed", "dropped", "replaying"]
+_STATUS_LIST_SQL = ", ".join(f"'{status}'" for status in ENTRY_STATUSES)
 
 
 class UserGameEntry(db.Model):
@@ -12,15 +19,15 @@ class UserGameEntry(db.Model):
     __table_args__ = (
         db.UniqueConstraint("user_id", "game_id", name="uq_user_game_entries_user_game"),
         db.CheckConstraint(
-            "status IN ('backlog', 'playing', 'completed', 'dropped', 'replaying')",
+            f"status IN ({_STATUS_LIST_SQL})",
             name="ck_user_game_entries_status",
         ),
         db.CheckConstraint(
-            "rating IS NULL OR (rating >= 1 AND rating <= 10)",
+            f"rating IS NULL OR (rating >= {RATING_MIN} AND rating <= {RATING_MAX})",
             name="ck_user_game_entries_rating",
         ),
         db.CheckConstraint(
-            "year_played IS NULL OR year_played >= 1970",
+            f"year_played IS NULL OR year_played >= {MIN_YEAR_PLAYED}",
             name="ck_user_game_entries_year_played",
         ),
     )
@@ -29,7 +36,7 @@ class UserGameEntry(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     game_id = db.Column(db.Integer, db.ForeignKey("games.id"), nullable=False, index=True)
 
-    status = db.Column(db.String(20), nullable=False, default="backlog")
+    status = db.Column(db.String(20), nullable=False, default=DEFAULT_ENTRY_STATUS)
     rating = db.Column(db.Integer)
     start_date = db.Column(db.Date)
     completion_date = db.Column(db.Date)

@@ -3,14 +3,17 @@ from datetime import datetime, timezone
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from app.constants import DEFAULT_PROFILE_VISIBILITY, PROFILE_VISIBILITIES
 from app.extensions import db, login_manager
+
+_VISIBILITY_LIST_SQL = ", ".join(f"'{value}'" for value in PROFILE_VISIBILITIES)
 
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     __table_args__ = (
         db.CheckConstraint(
-            "profile_visibility IN ('public', 'private')", name="ck_users_profile_visibility"
+            f"profile_visibility IN ({_VISIBILITY_LIST_SQL})", name="ck_users_profile_visibility"
         ),
     )
 
@@ -18,7 +21,9 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     username = db.Column(db.String(50), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    profile_visibility = db.Column(db.String(10), nullable=False, default="public")
+    profile_visibility = db.Column(
+        db.String(10), nullable=False, default=DEFAULT_PROFILE_VISIBILITY
+    )
     created_at = db.Column(
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )

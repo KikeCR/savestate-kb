@@ -3,9 +3,17 @@ from datetime import date, datetime
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
 
+from app.constants import (
+    DEFAULT_ENTRY_STATUS,
+    ENTRY_STATUSES,
+    MIN_YEAR_PLAYED,
+    RATING_MAX,
+    RATING_MIN,
+    STATUS_COMPLETED,
+)
 from app.extensions import db
 from app.models.game import Game
-from app.models.user_game_entry import STATUS_VALUES, UserGameEntry
+from app.models.user_game_entry import UserGameEntry
 from app.services import leaderboards
 from app.services.activity import record_activity
 
@@ -24,8 +32,8 @@ def _parse_date(value, field):
 def _validate_rating(value):
     if value is None:
         return None
-    if not isinstance(value, int) or not (1 <= value <= 10):
-        raise ValueError("rating must be an integer between 1 and 10")
+    if not isinstance(value, int) or not (RATING_MIN <= value <= RATING_MAX):
+        raise ValueError(f"rating must be an integer between {RATING_MIN} and {RATING_MAX}")
     return value
 
 
@@ -33,8 +41,8 @@ def _validate_year(value):
     if value is None:
         return None
     max_year = date.today().year + 1
-    if not isinstance(value, int) or not (1970 <= value <= max_year):
-        raise ValueError(f"year_played must be an integer between 1970 and {max_year}")
+    if not isinstance(value, int) or not (MIN_YEAR_PLAYED <= value <= max_year):
+        raise ValueError(f"year_played must be an integer between {MIN_YEAR_PLAYED} and {max_year}")
     return value
 
 
@@ -49,8 +57,8 @@ def list_entries():
 
     status = request.args.get("status")
     if status:
-        if status not in STATUS_VALUES:
-            return jsonify({"error": f"status must be one of {STATUS_VALUES}"}), 400
+        if status not in ENTRY_STATUSES:
+            return jsonify({"error": f"status must be one of {ENTRY_STATUSES}"}), 400
         query = query.filter_by(status=status)
 
     year = request.args.get("year", type=int)
@@ -66,12 +74,12 @@ def list_entries():
 def create_entry():
     data = request.get_json(silent=True) or {}
     game_id = data.get("game_id")
-    status = data.get("status", "backlog")
+    status = data.get("status", DEFAULT_ENTRY_STATUS)
 
     if not game_id:
         return jsonify({"error": "game_id is required"}), 400
-    if status not in STATUS_VALUES:
-        return jsonify({"error": f"status must be one of {STATUS_VALUES}"}), 400
+    if status not in ENTRY_STATUSES:
+        return jsonify({"error": f"status must be one of {ENTRY_STATUSES}"}), 400
 
     game = db.session.get(Game, game_id)
     if not game:
@@ -116,7 +124,7 @@ def create_entry():
     db.session.commit()
 
     record_activity(current_user, game, "added")
-    if entry.status == "completed":
+    if entry.status == STATUS_COMPLETED:
         leaderboards.record_completion(current_user.id, entry.effective_year)
         record_activity(current_user, game, "completed")
     if entry.rating is not None:
@@ -151,8 +159,8 @@ def update_entry(entry_id):
     old_year_played = entry.year_played
 
     if "status" in data:
-        if data["status"] not in STATUS_VALUES:
-            return jsonify({"error": f"status must be one of {STATUS_VALUES}"}), 400
+        if data["status"] not in ENTRY_STATUSES:
+            return jsonify({"error": f"status must be one of {ENTRY_STATUSES}"}), 400
         entry.status = data["status"]
 
     if "rating" in data:
@@ -199,8 +207,8 @@ def update_entry(entry_id):
 
     db.session.commit()
 
-    now_completed = entry.status == "completed"
-    was_completed = old_status == "completed"
+    now_completed = entry.status == STATUS_COMPLETED
+    was_completed = old_status == STATUS_COMPLETED
 
     if now_completed and not was_completed:
         leaderboards.record_completion(current_user.id, entry.effective_year)
@@ -232,7 +240,7 @@ def delete_entry(entry_id):
     if not entry:
         return jsonify({"error": "not found"}), 404
 
-    was_completed = entry.status == "completed"
+    was_completed = entry.status == STATUS_COMPLETED
     effective_year = entry.effective_year if was_completed else None
     had_rating = entry.rating is not None
 

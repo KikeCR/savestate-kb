@@ -6,12 +6,17 @@ from flask_login import login_required
 
 from app.extensions import db, redis_client
 from app.models.game import Game
-from app.services.rawg_client import RawgClient, RawgConfigError, normalize_rawg_game
+from app.services.rawg_client import (
+    RAWG_SEARCH_CACHE_TTL_SECONDS,
+    RAWG_SEARCH_KEY_PREFIX,
+    RawgClient,
+    RawgConfigError,
+    normalize_rawg_game,
+)
 
 games_bp = Blueprint("games", __name__, url_prefix="/api/games")
 
 SEARCH_RESULT_LIMIT = 20
-RAWG_CACHE_TTL_SECONDS = 6 * 60 * 60
 
 
 @games_bp.route("/search")
@@ -27,7 +32,7 @@ def search_games():
     if local_matches:
         return jsonify({"source": "postgres", "results": [g.to_dict() for g in local_matches]})
 
-    cache_key = f"rawg:search:{query.lower()}"
+    cache_key = f"{RAWG_SEARCH_KEY_PREFIX}{query.lower()}"
     cached = redis_client.get(cache_key)
     if cached:
         raw_results = json.loads(cached)
@@ -41,7 +46,7 @@ def search_games():
             return jsonify({"error": f"RAWG API request failed: {exc}"}), 502
 
         raw_results = data.get("results", [])
-        redis_client.setex(cache_key, RAWG_CACHE_TTL_SECONDS, json.dumps(raw_results))
+        redis_client.setex(cache_key, RAWG_SEARCH_CACHE_TTL_SECONDS, json.dumps(raw_results))
 
     games = []
     for raw in raw_results:
