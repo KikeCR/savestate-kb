@@ -1,0 +1,56 @@
+import pytest
+
+pytestmark = pytest.mark.integration
+
+
+def test_profile_not_found(client):
+    response = client.get("/api/users/nobody")
+
+    assert response.status_code == 404
+
+
+def test_public_profile_visible_to_anonymous(client, make_user):
+    make_user(username="publicuser", profile_visibility="public")
+
+    response = client.get("/api/users/publicuser")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["user"]["username"] == "publicuser"
+    assert body["is_owner"] is False
+
+
+def test_private_profile_hidden_from_others(client, make_user):
+    make_user(username="privateuser", profile_visibility="private")
+
+    response = client.get("/api/users/privateuser")
+
+    assert response.status_code == 403
+
+
+def test_private_profile_visible_to_owner(client, make_user):
+    owner = make_user(username="privateowner", profile_visibility="private")
+    with client.session_transaction() as sess:
+        sess["_user_id"] = str(owner.id)
+
+    response = client.get("/api/users/privateowner")
+
+    assert response.status_code == 200
+    assert response.get_json()["is_owner"] is True
+
+
+def test_profile_stats_reflect_entries(logged_in_client, make_game):
+    game = make_game(genres=["Roguelike"])
+    logged_in_client.post(
+        "/api/entries",
+        json={"game_id": game.id, "status": "completed", "rating": 9, "year_played": 2024},
+    )
+
+    response = logged_in_client.get(f"/api/users/{logged_in_client.user.username}")
+
+    assert response.status_code == 200
+    stats = response.get_json()["stats"]
+    assert {"year": 2024, "count": 1} in stats["completions_per_year"]
+    assert {"year": 2024, "count": 1} in stats["games_per_year"]
+    assert {"genre": "Roguelike", "count": 1} in stats["genre_breakdown"]
+    assert {"rating": 9, "count": 1} in stats["rating_distribution"]

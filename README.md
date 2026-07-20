@@ -91,10 +91,21 @@ The backend is mapped to host port **5001** instead of 5000. On macOS, port 5000
 - **Backend tooling**: Ruff for linting + formatting (Black-compatible), see `backend/pyproject.toml` for the full config. Install it via `backend/requirements-dev.txt` (kept separate from `requirements.txt` so the runtime image stays lean). Useful commands:
 
   ```bash
-  docker compose exec backend ruff check app/           # lint
-  docker compose exec backend ruff check --fix app/     # lint, autofixing what it can
-  docker compose exec backend ruff format app/          # format
-  docker compose exec backend ruff format --check app/  # format, check only
+  docker compose exec backend ruff check app/ tests/           # lint
+  docker compose exec backend ruff check --fix app/ tests/     # lint, autofixing what it can
+  docker compose exec backend ruff format app/ tests/          # format
+  docker compose exec backend ruff format --check app/ tests/  # format, check only
+  ```
+
+- **Backend tests**: pytest, using `testcontainers` to spin up ephemeral Postgres + Redis containers per test session (isolated from the dev `db`/`redis` services above). Requires Docker running on the host; run from `backend/` in a host-side virtualenv, not inside the `backend` container (it doesn't have access to the Docker socket):
+
+  ```bash
+  cd backend
+  python3.12 -m venv .venv && source .venv/bin/activate
+  pip install -r requirements-dev.txt
+  pytest                          # full suite
+  pytest -m "not integration"     # fast subset that doesn't need Docker
+  pytest --cov=app --cov-report=term-missing
   ```
 
 ## Project structure
