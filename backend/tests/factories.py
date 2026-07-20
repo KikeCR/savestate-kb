@@ -1,6 +1,7 @@
 import itertools
 
 from app.constants import DEFAULT_ENTRY_STATUS, DEFAULT_PROFILE_VISIBILITY
+from app.models.follow import Follow
 from app.models.game import Game
 from app.models.user import User
 from app.models.user_game_entry import UserGameEntry
@@ -45,3 +46,12 @@ def build_entry(user, game, **overrides):
     }
     defaults.update(overrides)
     return UserGameEntry(**defaults)
+
+
+def build_follow(follower, followed, **overrides):
+    defaults = {
+        "follower_id": follower.id,
+        "followed_id": followed.id,
+    }
+    defaults.update(overrides)
+    return Follow(**defaults)

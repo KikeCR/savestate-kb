@@ -6,6 +6,7 @@ from flask_login import current_user
 from app.constants import STATUS_COMPLETED, VISIBILITY_PRIVATE
 from app.models.user import User
 from app.models.user_game_entry import UserGameEntry
+from app.services import follows
 
 users_bp = Blueprint("users", __name__, url_prefix="/api/users")
 
@@ -62,6 +63,11 @@ def get_profile(username):
         {
             "user": user.to_public_dict(),
             "is_owner": is_owner,
+            "is_following": follows.is_following(current_user.id, user.id)
+            if current_user.is_authenticated
+            else False,
+            "follower_count": follows.follower_count(user.id),
+            "following_count": follows.following_count(user.id),
             "entries": [entry.to_dict() for entry in entries],
             "stats": _compute_stats(entries),
         }

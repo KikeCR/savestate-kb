@@ -18,6 +18,22 @@ def test_public_profile_visible_to_anonymous(client, make_user):
     body = response.get_json()
     assert body["user"]["username"] == "publicuser"
     assert body["is_owner"] is False
+    assert body["is_following"] is False
+    assert body["follower_count"] == 0
+    assert body["following_count"] == 0
+
+
+def test_profile_reflects_follow_state_and_counts(logged_in_client, make_user):
+    target = make_user()
+    logged_in_client.post(f"/api/users/{target.username}/follow")
+
+    response = logged_in_client.get(f"/api/users/{target.username}")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["is_following"] is True
+    assert body["follower_count"] == 1
+    assert body["following_count"] == 0
 
 
 def test_private_profile_hidden_from_others(client, make_user):
