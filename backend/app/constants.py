@@ -11,3 +11,5 @@ RATING_MIN = 1
 RATING_MAX = 10
 MIN_YEAR_PLAYED = 1970
 MIN_PASSWORD_LENGTH = 8
+
+ACTIVITY_ACTIONS = ["added", "completed", "rated", "logged_year"]

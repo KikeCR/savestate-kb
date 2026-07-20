@@ -75,8 +75,18 @@ export interface ActivityEvent {
 	game_cover_image_url: string | null
 	action: ActivityAction
 	created_at: string
-	rating?: number
-	year_played?: number
+	rating?: number | null
+	year_played?: number | null
+}
+
+export interface FollowListEntry {
+	user: PublicUser
+	is_following: boolean
+}
+
+export interface FollowActionResponse {
+	is_following: boolean
+	follower_count: number
 }
 
 export interface Stats {
@@ -89,6 +99,9 @@ export interface Stats {
 export interface ProfileResponse {
 	user: PublicUser
 	is_owner: boolean
+	is_following: boolean
+	follower_count: number
+	following_count: number
 	entries: Entry[]
 	stats: Stats
 }

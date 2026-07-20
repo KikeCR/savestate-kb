@@ -7,7 +7,7 @@ from app import create_app
 from app.config import Config
 from app.extensions import db
 from app.services.rawg_client import RAWG_BASE_URL
-from tests.factories import build_entry, build_game, build_user
+from tests.factories import build_entry, build_follow, build_game, build_user
 
 
 @pytest.fixture(scope="session")
@@ -104,6 +104,20 @@ def make_entry(app):
             db.session.refresh(entry)
             db.session.expunge(entry)
             return entry
+
+    return _make
+
+
+@pytest.fixture()
+def make_follow(app):
+    def _make(follower, followed, **overrides):
+        with app.app_context():
+            follow = build_follow(follower, followed, **overrides)
+            db.session.add(follow)
+            db.session.commit()
+            db.session.refresh(follow)
+            db.session.expunge(follow)
+            return follow
 
     return _make
 

@@ -7,6 +7,7 @@ import { ThemeToggle } from './components/ThemeToggle'
 import { Activity } from './pages/Activity'
 import { Board } from './pages/Board'
 import { Dashboard } from './pages/Dashboard'
+import { FollowersList, FollowingList } from './pages/FollowList'
 import { Home } from './pages/Home'
 import { Leaderboards } from './pages/Leaderboards'
 import { Library } from './pages/Library'
@@ -27,6 +28,14 @@ export const App = () => {
 					<Route path="/login" element={<Login />} />
 					<Route path="/register" element={<Register />} />
 					<Route path="/profile/:username" element={<Profile />} />
+					<Route
+						path="/profile/:username/followers"
+						element={<FollowersList />}
+					/>
+					<Route
+						path="/profile/:username/following"
+						element={<FollowingList />}
+					/>
 					<Route
 						path="/dashboard"
 						element={

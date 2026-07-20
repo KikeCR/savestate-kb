@@ -87,7 +87,7 @@ def test_create_completed_entry_records_leaderboard_and_activity(
     app = logged_in_client.application
     with app.app_context():
         leaderboard = get_completions_leaderboard()
-        activity = get_recent_activity()
+        activity = get_recent_activity(logged_in_client.user.id)
 
     user_id = str(logged_in_client.user.id)
     assert (user_id, 1.0) in leaderboard

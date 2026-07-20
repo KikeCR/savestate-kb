@@ -1,32 +1,45 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import { BarChart } from '../components/BarChart'
+import { FollowButton } from '../components/FollowButton'
 import { GameCard } from '../components/GameCard'
-import type { ProfileResponse } from '../types'
+import { useAuth } from '../context/AuthContext'
+import type { FollowActionResponse, ProfileResponse } from '../types'
 import './Profile.css'
 
 export const Profile = () => {
 	const { username } = useParams<{ username: string }>()
+	const { user: currentUser } = useAuth()
 	const [profile, setProfile] = useState<ProfileResponse | null>(null)
 	const [error, setError] = useState<string | null>(null)
+	const [followState, setFollowState] = useState<FollowActionResponse | null>(
+		null,
+	)
 
 	useEffect(() => {
 		if (!username) return
 		setProfile(null)
+		setFollowState(null)
 		setError(null)
 		api
 			.get<ProfileResponse>(`/api/users/${username}`)
-			.then(setProfile)
+			.then((data) => {
+				setProfile(data)
+				setFollowState({
+					is_following: data.is_following,
+					follower_count: data.follower_count,
+				})
+			})
 			.catch((err) =>
 				setError(err instanceof Error ? err.message : String(err)),
 			)
 	}, [username])
 
 	if (error) return <p className="error">{error}</p>
-	if (!profile) return <p>Loading...</p>
+	if (!profile || !followState) return <p>Loading...</p>
 
-	const { user, is_owner, entries, stats } = profile
+	const { user, is_owner, following_count, entries, stats } = profile
 
 	return (
 		<div>
@@ -34,6 +47,23 @@ export const Profile = () => {
 			<p className="profile-meta">
 				{is_owner && 'This is your profile. '}
 				Member since {new Date(user.created_at).toLocaleDateString()}
+			</p>
+			<p className="profile-follow-row">
+				<Link to={`/profile/${user.username}/followers`}>
+					{followState.follower_count} Followers
+				</Link>
+				{' · '}
+				<Link to={`/profile/${user.username}/following`}>
+					{following_count} Following
+				</Link>
+				{currentUser && !is_owner && (
+					<FollowButton
+						username={user.username}
+						isFollowing={followState.is_following}
+						onToggle={setFollowState}
+						onError={setError}
+					/>
+				)}
 			</p>
 
 			<h2>Stats</h2>
