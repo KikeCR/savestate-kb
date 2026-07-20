@@ -21,6 +21,16 @@ def test_public_profile_visible_to_anonymous(client, make_user):
     assert body["is_following"] is False
     assert body["follower_count"] == 0
     assert body["following_count"] == 0
+    assert body["user"]["avatar_url"] is None
+
+
+def test_profile_includes_avatar_url(client, make_user):
+    make_user(username="avataruser", avatar_url="https://example.com/avatar.png")
+
+    response = client.get("/api/users/avataruser")
+
+    assert response.status_code == 200
+    assert response.get_json()["user"]["avatar_url"] == "https://example.com/avatar.png"
 
 
 def test_profile_reflects_follow_state_and_counts(logged_in_client, make_user):

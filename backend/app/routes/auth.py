@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required, login_user, logout_user
 
-from app.constants import MIN_PASSWORD_LENGTH, PROFILE_VISIBILITIES
+from app.constants import AVATAR_URL_MAX_LENGTH, MIN_PASSWORD_LENGTH, PROFILE_VISIBILITIES
 from app.extensions import db
 from app.models.user import User
 
@@ -76,6 +76,19 @@ def update_me():
                 {"error": f"profile_visibility must be one of {PROFILE_VISIBILITIES}"}
             ), 400
         current_user.profile_visibility = value
+
+    if "avatar_url" in data:
+        value = data["avatar_url"]
+        if value in (None, ""):
+            current_user.avatar_url = None
+        elif (
+            not isinstance(value, str)
+            or len(value) > AVATAR_URL_MAX_LENGTH
+            or not value.startswith(("http://", "https://"))
+        ):
+            return jsonify({"error": "avatar_url must be an http(s) URL"}), 400
+        else:
+            current_user.avatar_url = value
 
     db.session.commit()
     return jsonify(current_user.to_private_dict())

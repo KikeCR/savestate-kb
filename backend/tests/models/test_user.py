@@ -27,6 +27,26 @@ def test_to_public_dict_excludes_email():
     assert "email" not in data
 
 
+def test_to_public_dict_defaults_avatar_url_to_none():
+    user = build_user()
+    user.id = 1
+    user.created_at = datetime.now(timezone.utc)
+
+    data = user.to_public_dict()
+
+    assert data["avatar_url"] is None
+
+
+def test_to_public_dict_includes_avatar_url_when_set():
+    user = build_user(avatar_url="https://example.com/avatar.png")
+    user.id = 1
+    user.created_at = datetime.now(timezone.utc)
+
+    data = user.to_public_dict()
+
+    assert data["avatar_url"] == "https://example.com/avatar.png"
+
+
 def test_to_private_dict_includes_email():
     user = build_user(email="hidden@example.com", username="visible")
     user.id = 1

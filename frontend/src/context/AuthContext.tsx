@@ -14,7 +14,9 @@ interface AuthContextValue {
 	register: (email: string, username: string, password: string) => Promise<User>
 	login: (email: string, password: string) => Promise<User>
 	logout: () => Promise<void>
-	updateProfileVisibility: (visibility: 'public' | 'private') => Promise<User>
+	updateProfile: (
+		fields: Partial<Pick<User, 'profile_visibility' | 'avatar_url'>>,
+	) => Promise<User>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -56,10 +58,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 		setUser(null)
 	}
 
-	const updateProfileVisibility = async (visibility: 'public' | 'private') => {
-		const data = await api.patch<User>('/api/auth/me', {
-			profile_visibility: visibility,
-		})
+	const updateProfile = async (
+		fields: Partial<Pick<User, 'profile_visibility' | 'avatar_url'>>,
+	) => {
+		const data = await api.patch<User>('/api/auth/me', fields)
 		setUser(data)
 		return data
 	}
@@ -72,7 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 				register,
 				login,
 				logout,
-				updateProfileVisibility,
+				updateProfile,
 			}}
 		>
 			{children}

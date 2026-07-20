@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { Avatar } from '../components/Avatar'
 import { FollowButton } from '../components/FollowButton'
 import { useAuth } from '../context/AuthContext'
 import type { FollowListEntry } from '../types'
@@ -60,7 +61,15 @@ const FollowListPage = ({
 				<ol className="follow-list">
 					{entries.map((entry) => (
 						<li key={entry.user.id}>
-							<Link to={`/profile/${entry.user.username}`}>
+							<Link
+								to={`/profile/${entry.user.username}`}
+								className="follow-list__user"
+							>
+								<Avatar
+									username={entry.user.username}
+									avatarUrl={entry.user.avatar_url}
+									size={28}
+								/>
 								{entry.user.username}
 							</Link>
 							{currentUser && currentUser.username !== entry.user.username && (
