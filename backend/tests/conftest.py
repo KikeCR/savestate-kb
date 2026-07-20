@@ -41,8 +41,11 @@ def app(postgres_container, redis_container):
 
 
 @pytest.fixture(autouse=True)
-def _clean_db(app):
+def _clean_db(request):
     yield
+    if request.node.get_closest_marker("integration") is None:
+        return
+    app = request.getfixturevalue("app")
     with app.app_context():
         for table in reversed(db.metadata.sorted_tables):
             db.session.execute(text(f"TRUNCATE TABLE {table.name} RESTART IDENTITY CASCADE"))
@@ -50,8 +53,11 @@ def _clean_db(app):
 
 
 @pytest.fixture(autouse=True)
-def _clean_redis(redis_container):
+def _clean_redis(request):
     yield
+    if request.node.get_closest_marker("integration") is None:
+        return
+    redis_container = request.getfixturevalue("redis_container")
     redis_container.get_client().flushdb()
 
 
