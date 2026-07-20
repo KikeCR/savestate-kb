@@ -3,6 +3,7 @@ export interface User {
 	email: string
 	username: string
 	profile_visibility: 'public' | 'private'
+	avatar_url: string | null
 	created_at: string
 }
 
@@ -57,6 +58,7 @@ export interface PublicUser {
 	id: number
 	username: string
 	profile_visibility: 'public' | 'private'
+	avatar_url: string | null
 	created_at: string
 }
 
@@ -104,4 +106,11 @@ export interface ProfileResponse {
 	following_count: number
 	entries: Entry[]
 	stats: Stats
+}
+
+export interface DashboardSummary {
+	status_counts: Record<EntryStatus, number>
+	completed_this_year: number
+	total_hours_played: number
+	currently_playing: Entry[]
 }

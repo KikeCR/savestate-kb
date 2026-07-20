@@ -24,6 +24,7 @@ class User(UserMixin, db.Model):
     profile_visibility = db.Column(
         db.String(10), nullable=False, default=DEFAULT_PROFILE_VISIBILITY
     )
+    avatar_url = db.Column(db.String(500), nullable=True)
     created_at = db.Column(
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
     )
@@ -39,6 +40,7 @@ class User(UserMixin, db.Model):
             "id": self.id,
             "username": self.username,
             "profile_visibility": self.profile_visibility,
+            "avatar_url": self.avatar_url,
             "created_at": self.created_at.isoformat(),
         }
 

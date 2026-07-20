@@ -10,12 +10,6 @@
 	margin-bottom: 0.5rem;
 }
 
-.game-card-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-	gap: 1rem;
-}
-
 .profile-meta {
 	color: var(--color-text-muted);
 	font-size: var(--font-size-sm);
@@ -26,4 +20,10 @@
 	align-items: center;
 	gap: 0.5rem;
 	font-size: var(--font-size-sm);
+}
+
+.profile-header-row {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
 }

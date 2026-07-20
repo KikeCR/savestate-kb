@@ -5,10 +5,10 @@ import {
 	Library as LibraryIcon,
 	LogOut,
 	Trophy,
-	User,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { Avatar } from '../Avatar'
 import './NavBar.css'
 
 export const NavBar = () => {
@@ -45,7 +45,8 @@ export const NavBar = () => {
 				className="nav-bar__user"
 				aria-label={user.username}
 			>
-				<User size={16} /> <span>{user.username}</span>
+				<Avatar username={user.username} avatarUrl={user.avatar_url} size={20} />{' '}
+				<span>{user.username}</span>
 			</Link>
 			<button onClick={handleLogout} aria-label="Log out">
 				<LogOut size={14} /> <span>Log out</span>

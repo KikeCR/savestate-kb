@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { Avatar } from '../components/Avatar'
 import { BarChart } from '../components/BarChart'
 import { FollowButton } from '../components/FollowButton'
 import { GameCard } from '../components/GameCard'
@@ -43,7 +44,10 @@ export const Profile = () => {
 
 	return (
 		<div>
-			<h1>{user.username}</h1>
+			<div className="profile-header-row">
+				<Avatar username={user.username} avatarUrl={user.avatar_url} size={64} />
+				<h1>{user.username}</h1>
+			</div>
 			<p className="profile-meta">
 				{is_owner && 'This is your profile. '}
 				Member since {new Date(user.created_at).toLocaleDateString()}

@@ -1,40 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { ActivityEvent } from '../types'
-import './Activity.css'
-
-const renderMessage = (event: ActivityEvent) => {
-	switch (event.action) {
-		case 'added':
-			return (
-				<>
-					<strong>{event.username}</strong> added{' '}
-					<strong>{event.game_title}</strong>
-				</>
-			)
-		case 'completed':
-			return (
-				<>
-					<strong>{event.username}</strong> completed{' '}
-					<strong>{event.game_title}</strong>
-				</>
-			)
-		case 'rated':
-			return (
-				<>
-					<strong>{event.username}</strong> rated{' '}
-					<strong>{event.game_title}</strong> — {event.rating}/10
-				</>
-			)
-		case 'logged_year':
-			return (
-				<>
-					<strong>{event.username}</strong> logged{' '}
-					<strong>{event.game_title}</strong> as played in {event.year_played}
-				</>
-			)
-	}
-}
+import { renderActivityMessage } from '../utils/activityMessage'
 
 export const Activity = () => {
 	const [events, setEvents] = useState<ActivityEvent[]>([])
@@ -73,7 +40,7 @@ export const Activity = () => {
 									aria-hidden="true"
 								/>
 							)}
-							<span>{renderMessage(event)}</span>
+							<span>{renderActivityMessage(event)}</span>
 							<span className="activity-feed__time">
 								{new Date(event.created_at).toLocaleString()}
 							</span>

@@ -1,0 +1,17 @@
+.avatar {
+	border-radius: 50%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.avatar--image {
+	object-fit: cover;
+}
+
+.avatar--initials {
+	color: #fff;
+	font-weight: var(--font-weight-semibold);
+	text-transform: uppercase;
+}

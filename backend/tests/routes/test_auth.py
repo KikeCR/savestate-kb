@@ -125,3 +125,35 @@ def test_update_me_requires_authentication(client):
     response = client.patch("/api/auth/me", json={"profile_visibility": "private"})
 
     assert response.status_code == 401
+
+
+def test_update_me_sets_avatar_url(logged_in_client):
+    response = logged_in_client.patch(
+        "/api/auth/me", json={"avatar_url": "https://example.com/avatar.png"}
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["avatar_url"] == "https://example.com/avatar.png"
+
+
+def test_update_me_clears_avatar_url(logged_in_client):
+    logged_in_client.patch("/api/auth/me", json={"avatar_url": "https://example.com/avatar.png"})
+
+    response = logged_in_client.patch("/api/auth/me", json={"avatar_url": ""})
+
+    assert response.status_code == 200
+    assert response.get_json()["avatar_url"] is None
+
+
+def test_update_me_rejects_invalid_avatar_url(logged_in_client):
+    response = logged_in_client.patch("/api/auth/me", json={"avatar_url": "not-a-url"})
+
+    assert response.status_code == 400
+
+
+def test_update_me_rejects_non_http_scheme_avatar_url(logged_in_client):
+    response = logged_in_client.patch(
+        "/api/auth/me", json={"avatar_url": "ftp://example.com/avatar.png"}
+    )
+
+    assert response.status_code == 400

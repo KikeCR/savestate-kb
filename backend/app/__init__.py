@@ -23,6 +23,7 @@ def create_app(config_class=Config):
 
     from app.routes.activity import activity_bp
     from app.routes.auth import auth_bp
+    from app.routes.dashboard import dashboard_bp
     from app.routes.entries import entries_bp
     from app.routes.follows import follows_bp
     from app.routes.games import games_bp
@@ -38,5 +39,6 @@ def create_app(config_class=Config):
     app.register_blueprint(activity_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(follows_bp)
+    app.register_blueprint(dashboard_bp)
 
     return app
