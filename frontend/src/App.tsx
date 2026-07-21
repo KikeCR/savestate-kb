@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import './App.css'
 import { Footer } from './components/Footer'
+import { Logo } from './components/Logo'
 import { NavBar } from './components/NavBar'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { ThemeToggle } from './components/ThemeToggle'
@@ -20,6 +21,7 @@ export const App = () => {
 	return (
 		<div className="app">
 			<div className="top-bar">
+				<Logo />
 				<ThemeToggle />
 			</div>
 			<NavBar />

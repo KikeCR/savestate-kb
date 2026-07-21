@@ -32,6 +32,9 @@
 	--chart-bar: #2a78d6;
 	--chart-track: #e1e0d9;
 
+	/* Brand wordmark only — body text stays on Manrope throughout. */
+	--font-logo: 'Orbitron Variable', sans-serif;
+
 	/* Type scale — sizes/weights/line-heights aren't theme-dependent, so this
 	   block doesn't need a .dark counterpart. */
 	--font-size-xs: 0.75rem;

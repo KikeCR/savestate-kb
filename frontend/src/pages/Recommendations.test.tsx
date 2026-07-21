@@ -8,6 +8,12 @@ import {
 } from '../test/fixtures'
 import { authMeRoute, mockGetRoutes, mockUser } from '../test/mockApi'
 import { RecommendationsPageObject } from '../test/page-objects/RecommendationsPageObject'
+import { MIN_REFRESH_ANIMATION_MS } from './Recommendations'
+
+// The refresh flow deliberately keeps the "thinking" animation up for at
+// least MIN_REFRESH_ANIMATION_MS even once the response has arrived, so any
+// waitFor spanning a refresh needs headroom beyond the default 1000ms.
+const REFRESH_WAIT_TIMEOUT = MIN_REFRESH_ANIMATION_MS + 1000
 
 vi.mock('../api/client', () => ({
 	api: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), del: vi.fn() },
@@ -23,14 +29,14 @@ beforeEach(() => {
 })
 
 describe('Recommendations', () => {
-	it('shows a loading state before the response resolves', () => {
+	it('shows the thinking animation before the initial response resolves', () => {
 		mockGetRoutes(mockedApi, {
 			...authMeRoute(mockUser),
 			[recommendationsPath]: new Promise(() => {}),
 		})
 		const page = new RecommendationsPageObject()
 
-		expect(page.loadingText).toBe(true)
+		expect(page.isThinking).toBe(true)
 	})
 
 	it('shows a cold-start message for a user with no taste signals yet', async () => {
@@ -101,6 +107,17 @@ describe('Recommendations', () => {
 		await waitFor(() => expect(page.errorText).toBe('server exploded'))
 	})
 
+	it('stops showing the thinking animation once the initial fetch has failed', async () => {
+		mockGetRoutes(mockedApi, {
+			...authMeRoute(mockUser),
+			[recommendationsPath]: new Error('server exploded'),
+		})
+		const page = new RecommendationsPageObject()
+
+		await waitFor(() => expect(page.errorText).toBe('server exploded'))
+		expect(page.isThinking).toBe(false)
+	})
+
 	it('refreshes and replaces the recommendation list', async () => {
 		mockGetRoutes(mockedApi, {
 			...authMeRoute(mockUser),
@@ -123,7 +140,10 @@ describe('Recommendations', () => {
 		await page.clickRefresh()
 
 		expect(mockedApi.post).toHaveBeenCalledWith('/api/recommendations/refresh')
-		await waitFor(() => expect(page.cardTitles).toEqual(['New Pick']))
+		expect(page.isThinking).toBe(true)
+		await waitFor(() => expect(page.cardTitles).toEqual(['New Pick']), {
+			timeout: REFRESH_WAIT_TIMEOUT,
+		})
 	})
 
 	it('shows the rate-limit error message when refresh is on cooldown', async () => {
@@ -132,7 +152,7 @@ describe('Recommendations', () => {
 			[recommendationsPath]: makeRecommendationsResponse(),
 		})
 		mockedApi.post.mockRejectedValueOnce(
-			new Error('refresh is rate-limited, try again later'),
+			new Error('you can refresh again in 45 seconds'),
 		)
 		const page = new RecommendationsPageObject()
 		await waitFor(() => expect(page.cardCount).toBe(1))
@@ -140,7 +160,7 @@ describe('Recommendations', () => {
 		await page.clickRefresh()
 
 		await waitFor(() =>
-			expect(page.errorText).toBe('refresh is rate-limited, try again later'),
+			expect(page.errorText).toBe('you can refresh again in 45 seconds'),
 		)
 	})
 
@@ -160,8 +180,28 @@ describe('Recommendations', () => {
 
 		await page.clickRefresh()
 		expect(page.refreshButton).toBeDisabled()
+		expect(page.isThinking).toBe(true)
 
 		resolveRequest(makeRecommendationsResponse())
-		await waitFor(() => expect(page.refreshButton).not.toBeDisabled())
+		await waitFor(() => expect(page.refreshButton).not.toBeDisabled(), {
+			timeout: REFRESH_WAIT_TIMEOUT,
+		})
+	})
+
+	it('keeps the thinking indicator visible for a minimum duration even after the response arrives', async () => {
+		mockGetRoutes(mockedApi, {
+			...authMeRoute(mockUser),
+			[recommendationsPath]: makeRecommendationsResponse(),
+		})
+		// Resolves on the same tick — simulates a very fast API response, which
+		// is exactly the case the minimum-duration padding exists for.
+		mockedApi.post.mockResolvedValueOnce(makeRecommendationsResponse())
+		const page = new RecommendationsPageObject()
+		await waitFor(() => expect(page.cardCount).toBe(1))
+
+		await page.clickRefresh()
+
+		expect(page.isThinking).toBe(true)
+		expect(page.cardCount).toBe(0)
 	})
 })

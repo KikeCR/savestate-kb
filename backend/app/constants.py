@@ -30,7 +30,9 @@ RECOMMENDATION_MIN_TASTE_SIGNALS = 3
 RECOMMENDATION_CANDIDATE_LIMIT = 30
 RECOMMENDATION_RESULT_LIMIT = 10
 RECOMMENDATION_CACHE_TTL_SECONDS = 24 * 60 * 60
-RECOMMENDATION_REFRESH_COOLDOWN_SECONDS = 60 * 60
+# NOTE: shortened from 1 hour for active development/testing — dial this back
+# up (e.g. 15-30 min) before considering the feature production-ready.
+RECOMMENDATION_REFRESH_COOLDOWN_SECONDS = 60
 
 # A candidate must clear one of these floors to be considered "highly rated"
 # enough to recommend. RAWG's metacritic is 0-100 and not every game has one

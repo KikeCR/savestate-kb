@@ -1,0 +1,49 @@
+.thinking-indicator {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.65rem;
+	padding: 3rem 0;
+	color: var(--color-text-secondary);
+	font-size: var(--font-size-sm);
+}
+
+.thinking-indicator__icon {
+	color: var(--color-accent);
+	animation: thinking-indicator-pulse 1.4s ease-in-out infinite;
+}
+
+.thinking-indicator__text {
+	animation: thinking-indicator-fade 0.4s ease;
+	min-width: 14rem;
+}
+
+@keyframes thinking-indicator-pulse {
+	0%,
+	100% {
+		transform: scale(1) rotate(0deg);
+		opacity: 0.7;
+	}
+	50% {
+		transform: scale(1.2) rotate(20deg);
+		opacity: 1;
+	}
+}
+
+@keyframes thinking-indicator-fade {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.thinking-indicator__icon,
+	.thinking-indicator__text {
+		animation: none;
+	}
+}

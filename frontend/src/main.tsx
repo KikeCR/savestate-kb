@@ -5,6 +5,7 @@ import { App } from './App'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import '@fontsource-variable/manrope/index.css'
+import '@fontsource-variable/orbitron/index.css'
 import './index.css'
 import './styles/shared.css'
 

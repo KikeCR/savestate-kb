@@ -97,3 +97,21 @@ def test_is_refresh_on_cooldown_reflects_lock_state(app, make_user):
         recommendation_service.start_refresh_cooldown(user.id)
 
         assert recommendation_service.is_refresh_on_cooldown(user.id) is True
+
+
+def test_get_refresh_cooldown_seconds_remaining_is_zero_when_not_on_cooldown(app, make_user):
+    user = make_user()
+    with app.app_context():
+        assert recommendation_service.get_refresh_cooldown_seconds_remaining(user.id) == 0
+
+
+def test_get_refresh_cooldown_seconds_remaining_reflects_ttl(app, make_user):
+    from app.constants import RECOMMENDATION_REFRESH_COOLDOWN_SECONDS
+
+    user = make_user()
+    with app.app_context():
+        recommendation_service.start_refresh_cooldown(user.id)
+
+        remaining = recommendation_service.get_refresh_cooldown_seconds_remaining(user.id)
+
+    assert 0 < remaining <= RECOMMENDATION_REFRESH_COOLDOWN_SECONDS
