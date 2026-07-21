@@ -3,9 +3,13 @@
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-md);
 	box-shadow: var(--shadow-card);
-	overflow: hidden;
 	display: flex;
 	flex-direction: column;
+}
+
+.recommendation-card__cover {
+	overflow: hidden;
+	border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 .recommendation-card__cover img,
@@ -46,7 +50,7 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 0.15rem;
-	color: #b45309;
+	color: var(--color-accent);
 }
 
 .recommendation-card__score svg {
@@ -54,10 +58,14 @@
 }
 
 .recommendation-card__genre {
+	display: inline-flex;
+	align-items: center;
 	background: var(--color-accent-bg);
 	color: var(--color-accent);
-	border-radius: var(--radius-sm);
-	padding: 0.1rem 0.4rem;
+	border-radius: 999px;
+	padding: 0.15rem 0.5rem;
+	font-weight: var(--font-weight-semibold);
+	white-space: nowrap;
 }
 
 .recommendation-card__reason {

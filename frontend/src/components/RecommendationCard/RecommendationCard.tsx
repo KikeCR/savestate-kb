@@ -1,6 +1,7 @@
 import { Plus, Star } from 'lucide-react'
 import { useState } from 'react'
 import { api } from '../../api/client'
+import { Tooltip } from '../Tooltip'
 import type { Recommendation } from '../../types'
 import './RecommendationCard.css'
 
@@ -46,7 +47,9 @@ export const RecommendationCard = ({
 				)}
 			</div>
 			<div className="recommendation-card__body">
-				<p className="recommendation-card__title">{game.title}</p>
+				<Tooltip label={game.title}>
+					<p className="recommendation-card__title">{game.title}</p>
+				</Tooltip>
 				<div className="recommendation-card__meta">
 					{game.metacritic != null && (
 						<span className="recommendation-card__score">

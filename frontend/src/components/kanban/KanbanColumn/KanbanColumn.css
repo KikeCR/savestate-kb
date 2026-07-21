@@ -1,5 +1,6 @@
 .kanban-column {
 	flex: 0 0 230px;
+	min-width: 0;
 	background: var(--color-surface-sunken);
 	border: 2px solid transparent;
 	border-radius: var(--radius-md);
@@ -39,4 +40,5 @@
 	flex-direction: column;
 	gap: 0.5rem;
 	min-height: 40px;
+	min-width: 0;
 }
