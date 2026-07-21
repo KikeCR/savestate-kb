@@ -29,6 +29,14 @@ export class FollowListPageObject {
 		return this.container.querySelector('h1')?.textContent ?? null
 	}
 
+	get backLinkHref(): string | null {
+		return (
+			this.container
+				.querySelector('.follow-list__back')
+				?.getAttribute('href') ?? null
+		)
+	}
+
 	get emptyText(): string | null {
 		return this.container.querySelector('p:not(.error)')?.textContent ?? null
 	}
