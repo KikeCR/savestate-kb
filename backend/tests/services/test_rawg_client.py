@@ -1,6 +1,6 @@
 from datetime import date
 
-from app.services.rawg_client import normalize_rawg_game
+from app.services.rawg_client import build_embedding_text, normalize_rawg_game
 
 
 def _raw_game(**overrides):
@@ -14,6 +14,10 @@ def _raw_game(**overrides):
         ],
         "genres": [{"name": "Metroidvania"}, {"name": "Platformer"}],
         "released": "2017-02-24",
+        "metacritic": 90,
+        "rating": 4.4,
+        "ratings_count": 6500,
+        "tags": [{"name": "Difficult"}, {"name": "Atmospheric"}],
     }
     defaults.update(overrides)
     return defaults
@@ -75,3 +79,61 @@ def test_normalize_handles_invalid_released_date():
     normalized = normalize_rawg_game(raw)
 
     assert normalized["release_date"] is None
+
+
+def test_normalize_maps_rating_metadata():
+    normalized = normalize_rawg_game(_raw_game())
+
+    assert normalized["metacritic"] == 90
+    assert normalized["rawg_rating"] == 4.4
+    assert normalized["rawg_ratings_count"] == 6500
+    assert normalized["tags"] == ["Difficult", "Atmospheric"]
+
+
+def test_normalize_handles_missing_rating_metadata():
+    raw = _raw_game(metacritic=None, rating=None, ratings_count=None, tags=None)
+
+    normalized = normalize_rawg_game(raw)
+
+    assert normalized["metacritic"] is None
+    assert normalized["rawg_rating"] is None
+    assert normalized["rawg_ratings_count"] is None
+    assert normalized["tags"] == []
+
+
+def test_normalize_caps_tags_to_max_per_game():
+    raw = _raw_game(tags=[{"name": f"Tag {i}"} for i in range(20)])
+
+    normalized = normalize_rawg_game(raw)
+
+    assert len(normalized["tags"]) == 8
+
+
+def test_normalize_skips_tags_without_a_name():
+    raw = _raw_game(tags=[{"name": "Difficult"}, {"id": 1}])
+
+    normalized = normalize_rawg_game(raw)
+
+    assert normalized["tags"] == ["Difficult"]
+
+
+def test_build_embedding_text_includes_all_available_fields():
+    normalized = normalize_rawg_game(_raw_game())
+
+    text = build_embedding_text(normalized)
+
+    assert "Hollow Knight" in text
+    assert "Genres: Metroidvania, Platformer." in text
+    assert "Tags: Difficult, Atmospheric." in text
+    assert "Platforms: PC, Switch." in text
+    assert "Metacritic: 90." in text
+
+
+def test_build_embedding_text_omits_empty_fields():
+    normalized = normalize_rawg_game(
+        _raw_game(genres=None, tags=None, platforms=None, metacritic=None)
+    )
+
+    text = build_embedding_text(normalized)
+
+    assert text == "Hollow Knight"

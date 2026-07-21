@@ -12,7 +12,7 @@ from tests.factories import build_entry, build_follow, build_game, build_user
 
 @pytest.fixture(scope="session")
 def postgres_container():
-    with PostgresContainer("postgres:16-alpine", driver=None) as pg:
+    with PostgresContainer("pgvector/pgvector:pg16", driver=None) as pg:
         yield pg
 
 
@@ -36,6 +36,8 @@ def app(postgres_container, redis_container):
 
     application = create_app(TestConfig)
     with application.app_context():
+        db.session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        db.session.commit()
         db.create_all()
     yield application
 

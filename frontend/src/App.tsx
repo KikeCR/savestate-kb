@@ -13,6 +13,7 @@ import { Leaderboards } from './pages/Leaderboards'
 import { Library } from './pages/Library'
 import { Login } from './pages/Login'
 import { Profile } from './pages/Profile'
+import { Recommendations } from './pages/Recommendations'
 import { Register } from './pages/Register'
 
 export const App = () => {
@@ -73,6 +74,14 @@ export const App = () => {
 						element={
 							<ProtectedRoute>
 								<Activity />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/recommendations"
+						element={
+							<ProtectedRoute>
+								<Recommendations />
 							</ProtectedRoute>
 						}
 					/>

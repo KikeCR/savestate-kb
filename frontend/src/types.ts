@@ -34,6 +34,9 @@ export interface Game {
 	platforms: string[]
 	genres: string[]
 	release_date: string | null
+	metacritic?: number | null
+	rawg_rating?: number | null
+	tags?: string[]
 }
 
 export interface Entry {
@@ -113,4 +116,19 @@ export interface DashboardSummary {
 	completed_this_year: number
 	total_hours_played: number
 	currently_playing: Entry[]
+}
+
+export type RecommendationSource = 'deepseek' | 'kimi' | 'retrieval_only'
+
+export interface Recommendation {
+	game: Game
+	reason: string
+	rank: number
+}
+
+export interface RecommendationsResponse {
+	source: RecommendationSource
+	generated_at: string
+	cold_start: boolean
+	recommendations: Recommendation[]
 }

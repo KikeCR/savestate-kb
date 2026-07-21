@@ -190,3 +190,68 @@ def test_delete_entry_not_found(logged_in_client):
     response = logged_in_client.delete("/api/entries/999999")
 
     assert response.status_code == 404
+
+
+def _seed_recommendations_cache(app, user_id):
+    from app.extensions import redis_client
+    from app.services.recommendation_service import _cache_key
+
+    with app.app_context():
+        redis_client.set(_cache_key(user_id), '{"cached": true}')
+
+
+def _recommendations_cache_exists(app, user_id):
+    from app.extensions import redis_client
+    from app.services.recommendation_service import _cache_key
+
+    with app.app_context():
+        return bool(redis_client.exists(_cache_key(user_id)))
+
+
+def test_create_entry_invalidates_recommendations_cache(logged_in_client, make_game):
+    app = logged_in_client.application
+    user = logged_in_client.user
+    _seed_recommendations_cache(app, user.id)
+
+    response = logged_in_client.post("/api/entries", json={"game_id": make_game().id})
+
+    assert response.status_code == 201
+    assert not _recommendations_cache_exists(app, user.id)
+
+
+def test_update_entry_rating_invalidates_recommendations_cache(logged_in_client, make_game):
+    app = logged_in_client.application
+    user = logged_in_client.user
+    created = logged_in_client.post("/api/entries", json={"game_id": make_game().id}).get_json()
+    _seed_recommendations_cache(app, user.id)
+
+    response = logged_in_client.patch(f"/api/entries/{created['id']}", json={"rating": 7})
+
+    assert response.status_code == 200
+    assert not _recommendations_cache_exists(app, user.id)
+
+
+def test_update_entry_without_rating_or_favorite_does_not_invalidate_cache(
+    logged_in_client, make_game
+):
+    app = logged_in_client.application
+    user = logged_in_client.user
+    created = logged_in_client.post("/api/entries", json={"game_id": make_game().id}).get_json()
+    _seed_recommendations_cache(app, user.id)
+
+    response = logged_in_client.patch(f"/api/entries/{created['id']}", json={"notes": "great game"})
+
+    assert response.status_code == 200
+    assert _recommendations_cache_exists(app, user.id)
+
+
+def test_delete_entry_invalidates_recommendations_cache(logged_in_client, make_game):
+    app = logged_in_client.application
+    user = logged_in_client.user
+    created = logged_in_client.post("/api/entries", json={"game_id": make_game().id}).get_json()
+    _seed_recommendations_cache(app, user.id)
+
+    response = logged_in_client.delete(f"/api/entries/{created['id']}")
+
+    assert response.status_code == 204
+    assert not _recommendations_cache_exists(app, user.id)
