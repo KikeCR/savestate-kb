@@ -15,6 +15,7 @@ node_modules/
 dist/
 .vite/
 *.tsbuildinfo
+coverage/
 
 # OS
 .DS_Store
