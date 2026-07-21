@@ -8,6 +8,10 @@ from app.services import llm_budget
 
 REQUEST_TIMEOUT = 15
 MAX_OUTPUT_TOKENS = 800
+# ~4 characters per token is a standard rough heuristic for English text —
+# good enough to reserve a worst-case budget slice before a call, not meant
+# to be an exact token count (the real one comes back in the response).
+CHARS_PER_TOKEN_ESTIMATE = 4
 
 _PROVIDER_CONFIG_KEYS = {
     LLM_PROVIDER_DEEPSEEK: {
@@ -104,13 +108,21 @@ def try_chat_completion_json(provider, system_prompt, user_prompt, redis_client=
     except LLMConfigError:
         return None
 
-    if not llm_budget.is_within_budget(provider, config["budget_usd"], redis_client=redis_client):
+    estimated_prompt_tokens = (len(system_prompt) + len(user_prompt)) // CHARS_PER_TOKEN_ESTIMATE
+    estimated_cost = llm_budget.estimate_cost_usd(
+        provider, estimated_prompt_tokens, MAX_OUTPUT_TOKENS
+    )
+    if not llm_budget.try_reserve_budget(
+        provider, config["budget_usd"], estimated_cost, redis_client=redis_client
+    ):
         return None
 
     try:
         parsed, usage = chat_completion_json(provider, system_prompt, user_prompt)
     except (requests.RequestException, LLMResponseError):
         return None
+    finally:
+        llm_budget.release_reservation(provider, estimated_cost, redis_client=redis_client)
 
     llm_budget.record_usage(
         provider, usage["prompt_tokens"], usage["completion_tokens"], redis_client=redis_client

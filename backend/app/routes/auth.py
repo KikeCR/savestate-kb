@@ -1,14 +1,21 @@
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required, login_user, logout_user
+from flask_wtf.csrf import generate_csrf
 
 from app.constants import AVATAR_URL_MAX_LENGTH, MIN_PASSWORD_LENGTH, PROFILE_VISIBILITIES
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models.user import User
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 
+@auth_bp.route("/csrf")
+def csrf_token():
+    return jsonify({"csrf_token": generate_csrf()})
+
+
 @auth_bp.route("/register", methods=["POST"])
+@limiter.limit("5 per minute")
 def register():
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
@@ -37,6 +44,7 @@ def register():
 
 
 @auth_bp.route("/login", methods=["POST"])
+@limiter.limit("10 per minute")
 def login():
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()

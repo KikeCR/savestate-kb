@@ -9,8 +9,7 @@ class AlreadyFollowingError(Exception):
 
 def is_following(follower_id, followed_id):
     return (
-        Follow.query.filter_by(follower_id=follower_id, followed_id=followed_id).first()
-        is not None
+        Follow.query.filter_by(follower_id=follower_id, followed_id=followed_id).first() is not None
     )
 
 

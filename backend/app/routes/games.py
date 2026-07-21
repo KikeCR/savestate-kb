@@ -4,7 +4,7 @@ import requests
 from flask import Blueprint, jsonify, request
 from flask_login import login_required
 
-from app.extensions import db, redis_client
+from app.extensions import db, limiter, redis_client
 from app.models.game import Game
 from app.services.rawg_client import (
     RAWG_SEARCH_CACHE_TTL_SECONDS,
@@ -19,15 +19,22 @@ games_bp = Blueprint("games", __name__, url_prefix="/api/games")
 SEARCH_RESULT_LIMIT = 20
 
 
+def _escape_like(value):
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 @games_bp.route("/search")
 @login_required
+@limiter.limit("30 per minute")
 def search_games():
     query = (request.args.get("q") or "").strip()
     if not query:
         return jsonify({"error": "q is required"}), 400
 
     local_matches = (
-        Game.query.filter(Game.title.ilike(f"%{query}%")).limit(SEARCH_RESULT_LIMIT).all()
+        Game.query.filter(Game.title.ilike(f"%{_escape_like(query)}%", escape="\\"))
+        .limit(SEARCH_RESULT_LIMIT)
+        .all()
     )
     if local_matches:
         return jsonify({"source": "postgres", "results": [g.to_dict() for g in local_matches]})

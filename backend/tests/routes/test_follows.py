@@ -29,9 +29,7 @@ def test_follow_nonexistent_user_returns_404(logged_in_client):
 
 
 def test_follow_self_returns_400(logged_in_client):
-    response = logged_in_client.post(
-        f"/api/users/{logged_in_client.user.username}/follow"
-    )
+    response = logged_in_client.post(f"/api/users/{logged_in_client.user.username}/follow")
 
     assert response.status_code == 400
 
@@ -77,9 +75,7 @@ def test_followers_list_returns_expected_shape(logged_in_client, make_user):
     assert body["results"][0]["user"]["username"] == logged_in_client.user.username
 
 
-def test_followers_list_is_following_reflects_viewers_own_follow_state(
-    logged_in_client, make_user
-):
+def test_followers_list_is_following_reflects_viewers_own_follow_state(logged_in_client, make_user):
     target = make_user()
     third_party = make_user()
     logged_in_client.post(f"/api/users/{target.username}/follow")
@@ -92,7 +88,9 @@ def test_followers_list_is_following_reflects_viewers_own_follow_state(
     response = logged_in_client.get(f"/api/users/{target.username}/followers")
 
     assert response.status_code == 200
-    results = {row["user"]["username"]: row["is_following"] for row in response.get_json()["results"]}
+    results = {
+        row["user"]["username"]: row["is_following"] for row in response.get_json()["results"]
+    }
     assert results[logged_in_client.user.username] is False
     assert results[third_party.username] is True
 

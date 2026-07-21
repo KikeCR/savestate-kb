@@ -28,6 +28,15 @@ def app(postgres_container, redis_container):
         TESTING = True
         SECRET_KEY = "test-secret"
         RAWG_API_KEY = "test-rawg-key"
+        # Route tests exercise business logic via the test client directly,
+        # not the browser+SPA flow that fetches/attaches a CSRF token — that
+        # flow gets its own dedicated coverage in test_csrf.py instead.
+        WTF_CSRF_ENABLED = False
+        # Many auth tests hit /login and /register repeatedly from the same
+        # test-client "IP" within the same minute — without this they'd trip
+        # the real per-IP limits and fail on rate limiting, not on the
+        # behavior under test. Rate limiting itself is covered separately.
+        RATELIMIT_ENABLED = False
         SQLALCHEMY_DATABASE_URI = postgres_container.get_connection_url()
         REDIS_URL = (
             f"redis://{redis_container.get_container_host_ip()}:"

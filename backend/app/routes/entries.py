@@ -6,6 +6,8 @@ from flask_login import current_user, login_required
 from app.constants import (
     DEFAULT_ENTRY_STATUS,
     ENTRY_STATUSES,
+    MAX_HOURS_PLAYED,
+    MAX_REPLAY_COUNT,
     MIN_YEAR_PLAYED,
     RATING_MAX,
     RATING_MIN,
@@ -43,6 +45,14 @@ def _validate_year(value):
     max_year = date.today().year + 1
     if not isinstance(value, int) or not (MIN_YEAR_PLAYED <= value <= max_year):
         raise ValueError(f"year_played must be an integer between {MIN_YEAR_PLAYED} and {max_year}")
+    return value
+
+
+def _validate_bounded_int(value, field, max_value):
+    if value in (None, ""):
+        return 0
+    if isinstance(value, bool) or not isinstance(value, int) or not (0 <= value <= max_value):
+        raise ValueError(f"{field} must be an integer between 0 and {max_value}")
     return value
 
 
@@ -105,6 +115,16 @@ def create_entry():
     if err:
         return jsonify({"error": err}), 400
 
+    try:
+        hours_played = _validate_bounded_int(
+            data.get("hours_played"), "hours_played", MAX_HOURS_PLAYED
+        )
+        replay_count = _validate_bounded_int(
+            data.get("replay_count"), "replay_count", MAX_REPLAY_COUNT
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
     entry = UserGameEntry(
         user_id=current_user.id,
         game_id=game_id,
@@ -113,10 +133,10 @@ def create_entry():
         start_date=start_date,
         completion_date=completion_date,
         year_played=year_played,
-        hours_played=data.get("hours_played") or 0,
+        hours_played=hours_played,
         notes=data.get("notes"),
         favorite=bool(data.get("favorite", False)),
-        replay_count=data.get("replay_count") or 0,
+        replay_count=replay_count,
         platform_played=data.get("platform_played"),
         tags=data.get("tags") or [],
     )
@@ -193,7 +213,12 @@ def update_entry(entry_id):
             return jsonify({"error": str(exc)}), 400
 
     if "hours_played" in data:
-        entry.hours_played = data["hours_played"] or 0
+        try:
+            entry.hours_played = _validate_bounded_int(
+                data["hours_played"], "hours_played", MAX_HOURS_PLAYED
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
 
     if "notes" in data:
         entry.notes = data["notes"]
@@ -202,7 +227,12 @@ def update_entry(entry_id):
         entry.favorite = bool(data["favorite"])
 
     if "replay_count" in data:
-        entry.replay_count = data["replay_count"] or 0
+        try:
+            entry.replay_count = _validate_bounded_int(
+                data["replay_count"], "replay_count", MAX_REPLAY_COUNT
+            )
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
 
     if "platform_played" in data:
         entry.platform_played = data["platform_played"]

@@ -14,16 +14,16 @@ def health():
     try:
         db.session.execute(text("SELECT 1"))
         status["postgres"] = "ok"
-    except Exception as exc:
-        status["postgres"] = f"error: {exc}"
+    except Exception:
+        status["postgres"] = "error"
         status["status"] = "error"
         http_status = 503
 
     try:
         redis_client.ping()
         status["redis"] = "ok"
-    except Exception as exc:
-        status["redis"] = f"error: {exc}"
+    except Exception:
+        status["redis"] = "error"
         status["status"] = "error"
         http_status = 503
 

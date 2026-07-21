@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { api, API_URL } from './client'
+import { _resetCsrfTokenCache, api, API_URL } from './client'
+
+const CSRF_TOKEN = 'test-csrf-token'
 
 const jsonResponse = (
 	body: unknown,
@@ -20,9 +22,22 @@ const emptyResponse = (init: { ok?: boolean; statusText?: string } = {}) => ({
 	},
 })
 
+// Mutating methods fetch a CSRF token first, so their fetch mock needs to
+// branch on URL: the csrf endpoint gets a token response, anything else
+// gets the response the test actually cares about.
+const withCsrf = (otherResponse: unknown) =>
+	vi.fn((url: string) =>
+		Promise.resolve(
+			url.includes('/api/auth/csrf')
+				? jsonResponse({ csrf_token: CSRF_TOKEN })
+				: otherResponse,
+		),
+	)
+
 describe('api client', () => {
 	afterEach(() => {
 		vi.unstubAllGlobals()
+		_resetCsrfTokenCache()
 	})
 
 	it('sends credentials and JSON content-type headers on every request', async () => {
@@ -48,7 +63,7 @@ describe('api client', () => {
 	it('resolves to null without calling json() when the response has no JSON content-type', async () => {
 		const response = emptyResponse()
 		const jsonSpy = vi.spyOn(response, 'json')
-		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response))
+		vi.stubGlobal('fetch', withCsrf(response))
 
 		const result = await api.del('/api/thing/1')
 
@@ -88,7 +103,7 @@ describe('api client', () => {
 	})
 
 	it('sends a JSON-stringified body and the right method for post/patch', async () => {
-		const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: 1 }))
+		const fetchMock = withCsrf(jsonResponse({ id: 1 }))
 		vi.stubGlobal('fetch', fetchMock)
 
 		await api.post('/api/entries', { game_id: 1 })
@@ -111,7 +126,7 @@ describe('api client', () => {
 	})
 
 	it('sends the DELETE method with no body', async () => {
-		const fetchMock = vi.fn().mockResolvedValue(emptyResponse())
+		const fetchMock = withCsrf(emptyResponse())
 		vi.stubGlobal('fetch', fetchMock)
 
 		await api.del('/api/entries/1')

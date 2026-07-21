@@ -7,11 +7,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
+RUN useradd --create-home --shell /usr/sbin/nologin appuser
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+RUN chown -R appuser:appuser /app
+
+USER appuser
 
 EXPOSE 5000
 
-CMD ["flask", "--app", "app", "run", "--host=0.0.0.0", "--port=5000", "--debug"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "3", "app:create_app()"]

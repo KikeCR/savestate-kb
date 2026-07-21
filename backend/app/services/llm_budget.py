@@ -17,6 +17,10 @@ def _usage_key(provider, token_type, month=None):
     return f"{USAGE_KEY_PREFIX}:{provider}:{month or _current_month()}:{token_type}_tokens"
 
 
+def _reservation_key(provider, month=None):
+    return f"{USAGE_KEY_PREFIX}:{provider}:{month or _current_month()}:reserved_usd"
+
+
 def _resolve_redis(redis_client):
     # Explicit param (not a module-level `from app.extensions import
     # redis_client`) so unit tests can inject a lightweight fake instead of
@@ -51,3 +55,35 @@ def record_usage(provider, prompt_tokens, completion_tokens, redis_client=None):
         key = _usage_key(provider, token_type)
         redis_client.incrby(key, count)
         redis_client.expire(key, USAGE_TTL_SECONDS)
+
+
+def try_reserve_budget(provider, budget_usd, estimated_cost_usd, redis_client=None):
+    """Atomically reserves `estimated_cost_usd` against the monthly budget
+    before the (slow) LLM call is made, closing the TOCTOU window between
+    checking `is_within_budget` and `record_usage` running only after the
+    call returns — without this, two concurrent requests could each observe
+    "under budget" before either's real usage is recorded.
+
+    Returns True if the reservation held (caller must release it via
+    release_reservation once the call finishes, success or failure); False
+    if honoring it would exceed the budget, in which case nothing is held.
+    """
+    redis_client = _resolve_redis(redis_client)
+    key = _reservation_key(provider)
+    # INCRBYFLOAT is atomic in Redis, so concurrent callers serialize here
+    # rather than each reading a stale total before either commits.
+    reserved_total = float(redis_client.incrbyfloat(key, estimated_cost_usd))
+    redis_client.expire(key, USAGE_TTL_SECONDS)
+
+    prompt_tokens, completion_tokens = get_usage_tokens(provider, redis_client=redis_client)
+    already_spent = estimate_cost_usd(provider, prompt_tokens, completion_tokens)
+
+    if already_spent + reserved_total > budget_usd:
+        redis_client.incrbyfloat(key, -estimated_cost_usd)
+        return False
+    return True
+
+
+def release_reservation(provider, estimated_cost_usd, redis_client=None):
+    redis_client = _resolve_redis(redis_client)
+    redis_client.incrbyfloat(_reservation_key(provider), -estimated_cost_usd)

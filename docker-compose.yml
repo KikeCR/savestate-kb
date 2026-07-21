@@ -32,6 +32,10 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
+    # Dev-only override: the Dockerfile's default CMD runs gunicorn (no
+    # reload, no debugger) so real image builds are production-safe by
+    # default. Local dev wants Flask's reloader/debugger instead.
+    command: ["flask", "--app", "app", "run", "--host=0.0.0.0", "--port=5000", "--debug"]
     env_file: .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-savestate}:${POSTGRES_PASSWORD:-savestate}@db:5432/${POSTGRES_DB:-savestate}
