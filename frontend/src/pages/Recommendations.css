@@ -1,0 +1,9 @@
+.recommendations__empty {
+	color: var(--color-text-secondary);
+}
+
+.recommendations__source {
+	font-size: var(--font-size-sm);
+	color: var(--color-text-secondary);
+	margin: 0 0 1rem;
+}

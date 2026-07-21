@@ -1,3 +1,4 @@
+import { ArrowLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api/client'
@@ -45,15 +46,19 @@ const FollowListPage = ({
 		endpoint,
 	)
 
-	if (error) return <p className="error">{error}</p>
-	if (!entries) return <p>Loading...</p>
-
 	return (
 		<div>
+			<Link to={`/profile/${username}`} className="follow-list__back">
+				<ArrowLeft size={14} /> Back to profile
+			</Link>
 			<h1>
 				{title} — {username}
 			</h1>
-			{entries.length === 0 ? (
+			{error ? (
+				<p className="error">{error}</p>
+			) : !entries ? (
+				<p>Loading...</p>
+			) : entries.length === 0 ? (
 				<p>{emptyMessage}</p>
 			) : (
 				<ol className="follow-list">

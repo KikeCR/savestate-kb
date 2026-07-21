@@ -29,6 +29,7 @@ def create_app(config_class=Config):
     from app.routes.games import games_bp
     from app.routes.health import health_bp
     from app.routes.leaderboards import leaderboards_bp
+    from app.routes.recommendations import recommendations_bp
     from app.routes.users import users_bp
 
     app.register_blueprint(health_bp)
@@ -40,5 +41,10 @@ def create_app(config_class=Config):
     app.register_blueprint(users_bp)
     app.register_blueprint(follows_bp)
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(recommendations_bp)
+
+    from app.cli import register_cli
+
+    register_cli(app)
 
     return app

@@ -8,6 +8,11 @@ REQUEST_TIMEOUT = 5
 RAWG_SEARCH_CACHE_TTL_SECONDS = 6 * 60 * 60
 RAWG_SEARCH_KEY_PREFIX = "rawg:search:"
 
+# RAWG returns far more tags per game than are useful for an embedding's
+# source text (many are noisy/low-signal, e.g. "Singleplayer"); cap how many
+# we keep to the highest-relevance ones, which RAWG already orders first.
+MAX_TAGS_PER_GAME = 8
+
 
 class RawgConfigError(RuntimeError):
     pass
@@ -34,6 +39,26 @@ class RawgClient:
         resp.raise_for_status()
         return resp.json()
 
+    def list_games(self, ordering, genres=None, page=1, page_size=40):
+        """Used by catalog_sync to pull well-rated games for the
+        recommendation candidate pool — no `search` term, just an ordering
+        (e.g. "-metacritic", "-rating") and an optional genre filter."""
+        params = {
+            "key": self.api_key,
+            "ordering": ordering,
+            "page": page,
+            "page_size": page_size,
+        }
+        if genres:
+            params["genres"] = genres
+        resp = requests.get(
+            f"{RAWG_BASE_URL}/games",
+            params=params,
+            timeout=REQUEST_TIMEOUT,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
 
 def normalize_rawg_game(data):
     platforms = sorted(
@@ -44,6 +69,7 @@ def normalize_rawg_game(data):
         }
     )
     genres = sorted({genre["name"] for genre in data.get("genres") or []})
+    tags = [tag["name"] for tag in (data.get("tags") or [])[:MAX_TAGS_PER_GAME] if tag.get("name")]
 
     released = data.get("released")
     release_date = None
@@ -60,4 +86,26 @@ def normalize_rawg_game(data):
         "platforms": platforms,
         "genres": genres,
         "release_date": release_date,
+        "metacritic": data.get("metacritic"),
+        "rawg_rating": data.get("rating"),
+        "rawg_ratings_count": data.get("ratings_count"),
+        "tags": tags,
     }
+
+
+def build_embedding_text(normalized_game):
+    """Composes the structured text embedded for RAG retrieval. Deliberately
+    built from list/search-endpoint fields only (title, genres, tags,
+    platforms, metacritic) — RAWG's full description text lives behind the
+    much more expensive per-game detail endpoint, which isn't worth the RAWG
+    quota for a candidate pool of thousands of games."""
+    parts = [normalized_game["title"]]
+    if normalized_game["genres"]:
+        parts.append(f"Genres: {', '.join(normalized_game['genres'])}.")
+    if normalized_game["tags"]:
+        parts.append(f"Tags: {', '.join(normalized_game['tags'])}.")
+    if normalized_game["platforms"]:
+        parts.append(f"Platforms: {', '.join(normalized_game['platforms'])}.")
+    if normalized_game["metacritic"] is not None:
+        parts.append(f"Metacritic: {normalized_game['metacritic']}.")
+    return " ".join(parts)

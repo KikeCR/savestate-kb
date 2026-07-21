@@ -4,6 +4,7 @@ import {
 	LayoutDashboard,
 	Library as LibraryIcon,
 	LogOut,
+	Sparkles,
 	Trophy,
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -38,6 +39,9 @@ export const NavBar = () => {
 			</Link>
 			<Link to="/activity" aria-label="Activity">
 				<ActivityIcon size={16} /> <span>Activity</span>
+			</Link>
+			<Link to="/recommendations" aria-label="Recommendations">
+				<Sparkles size={16} /> <span>For You</span>
 			</Link>
 			<span className="nav-bar__spacer" />
 			<Link

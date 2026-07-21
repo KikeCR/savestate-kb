@@ -13,6 +13,7 @@ Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stac
 - **Leaderboards**: Redis sorted sets for most games completed this year and highest average rating given
 - **Activity feed**: a live-updating "X just completed Y" feed, backed by a Redis list
 - **Public profiles**: shareable, with a visibility toggle (public/private) and a stats dashboard (genre breakdown, rating distribution, completions per year)
+- **AI recommendations**: a RAG pipeline (local embeddings + pgvector retrieval + DeepSeek/Kimi ranking) suggests highly-rated games similar to what you already love — see [AI Recommendations](#ai-recommendations) below
 
 ## Stack
 
@@ -22,15 +23,18 @@ Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stac
 | Backend | Flask, application factory pattern |
 | ORM | SQLAlchemy via Flask-SQLAlchemy, migrations via Flask-Migrate |
 | Auth | Flask-Login, session/cookie-based |
-| Database | PostgreSQL 16 |
+| Database | PostgreSQL 16 + [pgvector](https://github.com/pgvector/pgvector) |
 | Cache / real-time | Redis 7 |
 | External data | [RAWG API](https://rawg.io/apidocs) for game metadata |
+| Embeddings | [fastembed](https://github.com/qdrant/fastembed) (local, ONNX-based — no external API cost) |
+| Recommendation LLMs | [DeepSeek](https://platform.deepseek.com) (primary), [Kimi/Moonshot](https://platform.moonshot.ai) (fallback) |
 | Containerization | Docker Compose (`db`, `redis`, `backend`, `frontend`) |
 
 ## Prerequisites
 
 - Docker and Docker Compose
 - A free [RAWG API key](https://rawg.io/apidocs). You'll need this for game search to return anything beyond what's already cached locally.
+- Optional, for AI recommendations: a [DeepSeek API key](https://platform.deepseek.com/api_keys) and/or a [Kimi/Moonshot API key](https://platform.moonshot.ai/console/api-keys). Without these, `/recommendations` still works — it just always uses the non-LLM retrieval ranking. See [AI Recommendations](#ai-recommendations).
 
 ## Setup
 
@@ -43,6 +47,7 @@ Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stac
    Edit `.env` and set:
    - `SECRET_KEY`: any random string (used to sign Flask session cookies)
    - `RAWG_API_KEY`: your key from [rawg.io/apidocs](https://rawg.io/apidocs)
+   - `DEEPSEEK_API_KEY` / `KIMI_API_KEY`: optional, for AI recommendations — see [AI Recommendations](#ai-recommendations)
 
    The Postgres credentials in `.env.example` are fine for local development as-is.
 
@@ -52,7 +57,7 @@ Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stac
    docker compose up -d --build
    ```
 
-   This boots four containers: `db` (Postgres), `redis`, `backend` (Flask, port `5001`), `frontend` (Vite dev server, port `5173`).
+   This boots four containers: `db` (Postgres, using the `pgvector/pgvector:pg16` image), `redis`, `backend` (Flask, port `5001`), `frontend` (Vite dev server, port `5173`).
 
 3. **Run database migrations**
 
@@ -60,7 +65,13 @@ Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stac
    docker compose exec backend flask db upgrade
    ```
 
-4. **Open the app**
+4. **Populate the recommendation catalog** (optional, needed for `/recommendations` to return anything beyond a cold-start message)
+
+   ```bash
+   docker compose exec backend flask sync-catalog
+   ```
+
+5. **Open the app**
 
    - Frontend: http://localhost:5173
    - Backend health check: http://localhost:5001/health (confirms both Postgres and Redis are reachable)
@@ -114,26 +125,46 @@ The backend is mapped to host port **5001** instead of 5000. On macOS, port 5000
   pytest --cov=app --cov-report=term-missing
   ```
 
+  The recommendation tests mock the embedding model, so they don't need network access — but the real `fastembed` model (used by `flask sync-catalog` and the live app) downloads from Hugging Face on first use if it isn't already cached, so make sure whichever host runs it has outbound network access at least once.
+
+## AI Recommendations
+
+`/recommendations` suggests games you don't own yet, built as a proper RAG (retrieval-augmented generation) pipeline rather than just asking an LLM for game names:
+
+1. **Corpus**: `flask sync-catalog` pulls a broad pool of well-rated games from RAWG (filtered to a Metacritic/ratings-count floor) into the `games` table, and embeds each one locally (via [fastembed](https://github.com/qdrant/fastembed) — no external API call, no cost).
+2. **Retrieval**: your taste profile (games you've rated ≥7 or favorited) is embedded the same way and compared against the catalog with pgvector cosine similarity, excluding games you already own.
+3. **Generation**: the top candidates are handed to an LLM (DeepSeek first, Kimi as fallback) to rank and explain in one sentence each — constrained to *only* the retrieved candidates, so it can't invent a game that doesn't exist. If both providers are unconfigured, over budget, or fail, the app falls back to the retrieval ranking alone (an "algorithm picks" badge appears on the page instead of "AI curated").
+
+**Budget guard**: real token usage from each API response is tracked in Redis per provider per month and compared against `DEEPSEEK_MONTHLY_BUDGET_USD` / `KIMI_MONTHLY_BUDGET_USD` (both default to `$1.00`). Once a provider's monthly spend would cross that ceiling, it's skipped automatically — the feature degrades gracefully rather than erroring. Set a spend/balance cap on each provider's own dashboard too, as a backstop.
+
+**Keeping the catalog fresh**: there's no in-process scheduler, so run `flask sync-catalog` on whatever cadence you like (weekly is reasonable) via cron or a CI scheduled job:
+
+```bash
+docker compose exec backend flask sync-catalog
+```
+
 ## Project structure
 
 ```
 backend/
   app/
-    constants.py  # shared enum-like values (entry status, profile visibility, validation bounds)
-    models/       # User, Game, UserGameEntry (SQLAlchemy)
-    routes/       # auth, games, entries, leaderboards, activity, users
-    services/     # RAWG API client, Redis leaderboards, Redis activity feed
+    constants.py  # shared enum-like values (entry status, rating bounds, recommendation tuning)
+    cli.py        # flask sync-catalog command
+    models/       # User, Game (+ RAG fields: embedding, metacritic, tags), UserGameEntry
+    routes/       # auth, games, entries, leaderboards, activity, users, recommendations
+    services/     # RAWG client, Redis leaderboards/activity, embeddings (fastembed),
+                   # catalog_sync, llm_client (DeepSeek/Kimi), llm_budget, recommendation_service
   migrations/      # Flask-Migrate / Alembic
 
 frontend/
   src/
     api/          # typed fetch client
     components/   # one folder per component (Component.tsx + .css + index.ts),
-                   # e.g. GameCard/, NavBar/, YearSelect/, kanban/
+                   # e.g. GameCard/, RecommendationCard/, NavBar/, YearSelect/, kanban/
     context/      # AuthContext, ThemeContext
     hooks/        # useLocalStorageState, useToggleState, useAvailableYears
-    pages/        # Home, Login, Register, Dashboard, Library, Board,
-                   # Leaderboards, Activity, Profile (each with its own .css)
+    pages/        # Home, Login, Register, Dashboard, Library, Board, Leaderboards,
+                   # Activity, Profile, Recommendations (each with its own .css)
     styles/       # shared.css (utility classes reused across pages)
 ```
 

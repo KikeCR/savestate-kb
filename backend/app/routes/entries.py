@@ -14,7 +14,7 @@ from app.constants import (
 from app.extensions import db
 from app.models.game import Game
 from app.models.user_game_entry import UserGameEntry
-from app.services import leaderboards
+from app.services import leaderboards, recommendation_service
 from app.services.activity import record_activity
 
 entries_bp = Blueprint("entries", __name__, url_prefix="/api/entries")
@@ -133,6 +133,11 @@ def create_entry():
     if entry.year_played is not None:
         record_activity(current_user, game, "logged_year", year_played=entry.year_played)
 
+    # A new entry always changes the owned-games exclusion set, and often
+    # also the taste profile (rating/favorite set at creation time) — either
+    # way, any cached recommendation set is now stale.
+    recommendation_service.invalidate_cache(current_user.id)
+
     return jsonify(entry.to_dict()), 201
 
 
@@ -230,6 +235,9 @@ def update_entry(entry_id):
     if year_played_changed and entry.year_played is not None:
         record_activity(current_user, entry.game, "logged_year", year_played=entry.year_played)
 
+    if "rating" in data or "favorite" in data:
+        recommendation_service.invalidate_cache(current_user.id)
+
     return jsonify(entry.to_dict())
 
 
@@ -251,5 +259,7 @@ def delete_entry(entry_id):
         leaderboards.remove_completion(current_user.id, effective_year)
     if had_rating:
         leaderboards.refresh_avg_rating(current_user.id)
+
+    recommendation_service.invalidate_cache(current_user.id)
 
     return "", 204

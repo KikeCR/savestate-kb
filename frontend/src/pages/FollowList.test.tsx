@@ -49,6 +49,18 @@ describe('FollowersList / FollowingList', () => {
 		expect(list.heading).toContain('Followers')
 	})
 
+	it('links back to the profile even before the list has loaded', async () => {
+		mockGetRoutes(mockedApi, {
+			...authMeRoute(mockUser),
+			[followersPath]: { results: [] },
+		})
+		const list = new FollowListPageObject(FollowersList)
+
+		expect(list.backLinkHref).toBe('/profile/sam')
+		await waitFor(() => expect(list.emptyText).toBe('No followers yet.'))
+		expect(list.backLinkHref).toBe('/profile/sam')
+	})
+
 	it('shows an error message when the fetch fails', async () => {
 		mockGetRoutes(mockedApi, {
 			...authMeRoute(mockUser),
