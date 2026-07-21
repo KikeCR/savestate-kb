@@ -14,8 +14,19 @@ async function getCsrfToken(): Promise<string> {
 		})
 			.then((res) => res.json())
 			.then((body) => body.csrf_token as string)
+			.catch((err) => {
+				// Don't cache a failure — a transient blip on page load would
+				// otherwise permanently break every mutating request for the
+				// rest of the session.
+				csrfTokenPromise = null
+				throw err
+			})
 	}
 	return csrfTokenPromise
+}
+
+export function _resetCsrfTokenCache() {
+	csrfTokenPromise = null
 }
 
 async function request<T>(

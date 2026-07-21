@@ -71,9 +71,7 @@ def test_summary_currently_playing_ordered_by_recency(logged_in_client, make_gam
     older_game = make_game(title="Older")
     newer_game = make_game(title="Newer")
     now = datetime.now(timezone.utc)
-    make_entry(
-        user, older_game, status="playing", updated_at=now - timedelta(days=5)
-    )
+    make_entry(user, older_game, status="playing", updated_at=now - timedelta(days=5))
     make_entry(user, newer_game, status="playing", updated_at=now)
 
     response = logged_in_client.get("/api/dashboard/summary")

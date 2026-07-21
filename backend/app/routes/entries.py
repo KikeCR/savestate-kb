@@ -116,8 +116,12 @@ def create_entry():
         return jsonify({"error": err}), 400
 
     try:
-        hours_played = _validate_bounded_int(data.get("hours_played"), "hours_played", MAX_HOURS_PLAYED)
-        replay_count = _validate_bounded_int(data.get("replay_count"), "replay_count", MAX_REPLAY_COUNT)
+        hours_played = _validate_bounded_int(
+            data.get("hours_played"), "hours_played", MAX_HOURS_PLAYED
+        )
+        replay_count = _validate_bounded_int(
+            data.get("replay_count"), "replay_count", MAX_REPLAY_COUNT
+        )
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
 

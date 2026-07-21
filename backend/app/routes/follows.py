@@ -61,9 +61,7 @@ def follow(username):
     except follows.AlreadyFollowingError as exc:
         return jsonify({"error": str(exc)}), 409
 
-    return jsonify(
-        {"is_following": True, "follower_count": follows.follower_count(target.id)}
-    ), 201
+    return jsonify({"is_following": True, "follower_count": follows.follower_count(target.id)}), 201
 
 
 @follows_bp.route("/<username>/follow", methods=["DELETE"])
