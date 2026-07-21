@@ -2,6 +2,7 @@ import { RefreshCw, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import { RecommendationCard } from '../components/RecommendationCard'
+import { ThinkingIndicator } from '../components/ThinkingIndicator'
 import type { RecommendationSource, RecommendationsResponse } from '../types'
 import './Recommendations.css'
 
@@ -10,6 +11,14 @@ const SOURCE_LABELS: Record<RecommendationSource, string> = {
 	kimi: 'AI curated · Kimi',
 	retrieval_only: 'Algorithm picks',
 }
+
+// The AI ranking step is often fast enough that a spinner would just flash
+// and disappear, which reads as broken rather than reassuring. Keeping the
+// "thinking" animation up for at least this long (even once the response has
+// already arrived) makes the AI step legible as real work happening.
+export const MIN_REFRESH_ANIMATION_MS = 2200
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const Recommendations = () => {
 	const [data, setData] = useState<RecommendationsResponse | null>(null)
@@ -28,10 +37,15 @@ export const Recommendations = () => {
 	const handleRefresh = async () => {
 		setRefreshing(true)
 		setError(null)
+		const startedAt = Date.now()
 		try {
 			const result = await api.post<RecommendationsResponse>(
 				'/api/recommendations/refresh',
 			)
+			const elapsed = Date.now() - startedAt
+			if (elapsed < MIN_REFRESH_ANIMATION_MS) {
+				await wait(MIN_REFRESH_ANIMATION_MS - elapsed)
+			}
 			setData(result)
 		} catch (err) {
 			setError(err instanceof Error ? err.message : String(err))
@@ -57,8 +71,8 @@ export const Recommendations = () => {
 
 			{error && <p className="error">{error}</p>}
 
-			{!data ? (
-				<p>Loading...</p>
+			{error && !data ? null : refreshing || !data ? (
+				<ThinkingIndicator />
 			) : data.cold_start ? (
 				<p className="recommendations__empty">
 					Rate or favorite a few games in your library to get personalized

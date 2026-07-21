@@ -16,10 +16,6 @@ export class RecommendationsPageObject {
 		return this.container.querySelector('.error')?.textContent ?? null
 	}
 
-	get loadingText(): boolean {
-		return this.container.textContent?.includes('Loading...') ?? false
-	}
-
 	get emptyText(): string | null {
 		return (
 			this.container.querySelector('.recommendations__empty')?.textContent ??
@@ -46,6 +42,17 @@ export class RecommendationsPageObject {
 
 	get refreshButton() {
 		return screen.getByRole('button', { name: /refresh/i })
+	}
+
+	get isThinking(): boolean {
+		return this.container.querySelector('.thinking-indicator') !== null
+	}
+
+	get thinkingText(): string | null {
+		return (
+			this.container.querySelector('.thinking-indicator__text')?.textContent ??
+			null
+		)
 	}
 
 	async clickRefresh() {

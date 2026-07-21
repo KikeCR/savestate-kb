@@ -12,11 +12,27 @@ def get_recommendations():
     return jsonify(recommendation_service.get_recommendations(current_user.id))
 
 
+def _format_wait(seconds):
+    if seconds >= 60:
+        minutes = -(-seconds // 60)  # ceil division, so "1 minute" isn't shown for 119s
+        unit = "minute" if minutes == 1 else "minutes"
+        return f"{minutes} {unit}"
+    return f"{seconds} second{'' if seconds == 1 else 's'}"
+
+
 @recommendations_bp.route("/refresh", methods=["POST"])
 @login_required
 def refresh_recommendations():
-    if recommendation_service.is_refresh_on_cooldown(current_user.id):
-        return jsonify({"error": "refresh is rate-limited, try again later"}), 429
+    seconds_remaining = recommendation_service.get_refresh_cooldown_seconds_remaining(
+        current_user.id
+    )
+    if seconds_remaining > 0:
+        return jsonify(
+            {
+                "error": f"you can refresh again in {_format_wait(seconds_remaining)}",
+                "retry_after_seconds": seconds_remaining,
+            }
+        ), 429
 
     # Set before computing, not after: bounds worst-case LLM call volume
     # from a burst of refresh clicks even if the pipeline itself is slow.

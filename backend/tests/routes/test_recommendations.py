@@ -59,9 +59,14 @@ def test_refresh_succeeds_on_first_call(logged_in_client):
 
 
 def test_refresh_is_rate_limited_on_immediate_second_call(logged_in_client):
+    from app.constants import RECOMMENDATION_REFRESH_COOLDOWN_SECONDS
+
     first = logged_in_client.post("/api/recommendations/refresh")
     assert first.status_code == 200
 
     second = logged_in_client.post("/api/recommendations/refresh")
 
     assert second.status_code == 429
+    body = second.get_json()
+    assert 0 < body["retry_after_seconds"] <= RECOMMENDATION_REFRESH_COOLDOWN_SECONDS
+    assert str(body["retry_after_seconds"]) in body["error"] or "minute" in body["error"]

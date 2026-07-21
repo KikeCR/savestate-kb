@@ -24,12 +24,4 @@ export class HomePageObject {
 	get showsWelcomeBack(): boolean {
 		return this.container.textContent?.includes('Welcome back') ?? false
 	}
-
-	get healthErrorText(): string | null {
-		return this.container.querySelector('pre.error')?.textContent ?? null
-	}
-
-	get healthJsonText(): string | null {
-		return this.container.querySelector('pre:not(.error)')?.textContent ?? null
-	}
 }

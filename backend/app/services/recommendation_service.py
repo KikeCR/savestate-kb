@@ -239,6 +239,16 @@ def is_refresh_on_cooldown(user_id, redis_client=None):
     return bool(_resolve_redis(redis_client).exists(_refresh_lock_key(user_id)))
 
 
+def get_refresh_cooldown_seconds_remaining(user_id, redis_client=None):
+    """Seconds until the refresh cooldown lifts, or 0 if it isn't active.
+    Used to give the 429 response an actual wait time instead of a vague
+    "try again later" — Redis TTL returns -2 for a missing key, which we
+    normalize to 0 rather than a nonsensical negative wait.
+    """
+    ttl = _resolve_redis(redis_client).ttl(_refresh_lock_key(user_id))
+    return max(ttl, 0)
+
+
 def start_refresh_cooldown(user_id, redis_client=None):
     _resolve_redis(redis_client).setex(
         _refresh_lock_key(user_id), RECOMMENDATION_REFRESH_COOLDOWN_SECONDS, "1"
