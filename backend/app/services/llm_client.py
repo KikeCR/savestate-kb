@@ -68,8 +68,8 @@ def chat_completion_json(provider, system_prompt, user_prompt):
                 {"role": "user", "content": user_prompt},
             ],
             "response_format": {"type": "json_object"},
-            "temperature": 0.7,
             "max_tokens": MAX_OUTPUT_TOKENS,
+            "thinking": {"type": "disabled"},
         },
         timeout=REQUEST_TIMEOUT,
     )

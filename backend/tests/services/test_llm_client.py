@@ -63,6 +63,22 @@ def test_chat_completion_json_parses_content_and_usage(configured_app, requests_
     assert usage == {"prompt_tokens": 100, "completion_tokens": 50}
 
 
+def test_chat_completion_json_disables_thinking_mode(configured_app, requests_mock):
+    # Regression test: both DeepSeek's and Kimi's current models default to
+    # an extended chain-of-thought phase that can consume the entire
+    # max_tokens budget before ever writing to `content`, leaving it empty
+    # for any non-trivial prompt (confirmed against the real APIs). Also,
+    # Kimi rejects any temperature other than 1, so it must not be sent.
+    _mock_success_response(requests_mock, '{"recommendations": []}')
+
+    with configured_app.app_context():
+        llm_client.chat_completion_json(LLM_PROVIDER_DEEPSEEK, "system", "user")
+
+    sent_body = requests_mock.last_request.json()
+    assert sent_body["thinking"] == {"type": "disabled"}
+    assert "temperature" not in sent_body
+
+
 def test_chat_completion_json_raises_on_missing_api_key(configured_app):
     from app.constants import LLM_PROVIDER_KIMI
 
