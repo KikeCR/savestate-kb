@@ -39,6 +39,10 @@ class _FakeRedis:
         self.values[key] = self.values.get(key, 0) + amount
         return self.values[key]
 
+    def incrbyfloat(self, key, amount):
+        self.values[key] = float(self.values.get(key, 0)) + amount
+        return self.values[key]
+
     def expire(self, key, ttl):
         pass
 
@@ -151,8 +155,16 @@ def test_try_chat_completion_json_returns_none_on_call_failure(configured_app, r
             LLM_PROVIDER_DEEPSEEK, "system", "user", redis_client=redis_client
         )
 
+        from app.services import llm_budget
+
+        prompt, completion = llm_budget.get_usage_tokens(
+            LLM_PROVIDER_DEEPSEEK, redis_client=redis_client
+        )
+
     assert result is None
-    assert redis_client.values == {}
+    # No real usage recorded, and the pre-call reservation was fully released.
+    assert (prompt, completion) == (0, 0)
+    assert redis_client.values[llm_budget._reservation_key(LLM_PROVIDER_DEEPSEEK)] == 0
 
 
 def test_try_chat_completion_json_records_usage_on_success(configured_app, requests_mock):

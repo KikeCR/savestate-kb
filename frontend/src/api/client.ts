@@ -1,20 +1,40 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const SAFE_METHODS = new Set(['GET', 'HEAD'])
 
 interface RequestOptions extends RequestInit {
 	headers?: Record<string, string>
+}
+
+let csrfTokenPromise: Promise<string> | null = null
+
+async function getCsrfToken(): Promise<string> {
+	if (!csrfTokenPromise) {
+		csrfTokenPromise = fetch(`${API_URL}/api/auth/csrf`, {
+			credentials: 'include',
+		})
+			.then((res) => res.json())
+			.then((body) => body.csrf_token as string)
+	}
+	return csrfTokenPromise
 }
 
 async function request<T>(
 	path: string,
 	options: RequestOptions = {},
 ): Promise<T> {
+	const method = (options.method || 'GET').toUpperCase()
+	const headers: Record<string, string> = {
+		'Content-Type': 'application/json',
+		...options.headers,
+	}
+	if (!SAFE_METHODS.has(method)) {
+		headers['X-CSRFToken'] = await getCsrfToken()
+	}
+
 	const res = await fetch(`${API_URL}${path}`, {
-		credentials: 'include',
-		headers: {
-			'Content-Type': 'application/json',
-			...options.headers,
-		},
 		...options,
+		credentials: 'include',
+		headers,
 	})
 
 	let body: unknown = null

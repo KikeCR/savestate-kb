@@ -1,8 +1,8 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 
-from app.config import Config
-from app.extensions import db, init_redis, login_manager, migrate
+from app.config import IS_PRODUCTION, Config
+from app.extensions import csrf, db, init_redis, limiter, login_manager, migrate, talisman
 
 
 def create_app(config_class=Config):
@@ -14,6 +14,18 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     init_redis(app)
     CORS(app, supports_credentials=True, origins=[app.config["FRONTEND_URL"]])
+    csrf.init_app(app)
+    limiter.init_app(app)
+    # force_https/HSTS off outside prod so local http://localhost dev isn't
+    # redirect-looped; if TLS ends up terminated by an upstream reverse proxy
+    # instead of this app directly, force_https should stay False there too.
+    talisman.init_app(
+        app,
+        force_https=IS_PRODUCTION,
+        strict_transport_security=IS_PRODUCTION,
+        session_cookie_secure=IS_PRODUCTION,
+        content_security_policy={"default-src": "'none'"},
+    )
 
     from app import models  # noqa: F401 registers models with SQLAlchemy metadata
 

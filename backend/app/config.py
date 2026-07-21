@@ -1,8 +1,15 @@
 import os
 
+IS_PRODUCTION = os.environ.get("FLASK_ENV") == "production"
+
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev")
+    SECRET_KEY = os.environ.get("SECRET_KEY")
+    if not SECRET_KEY:
+        if IS_PRODUCTION:
+            raise RuntimeError("SECRET_KEY must be set when FLASK_ENV=production")
+        SECRET_KEY = "dev"
+
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "postgresql://savestate:savestate@localhost:5432/savestate"
     )
@@ -17,6 +24,16 @@ class Config:
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+    # Only require HTTPS-only cookies in production — a plain-HTTP local
+    # docker-compose/dev setup would silently drop the session cookie otherwise.
+    SESSION_COOKIE_SECURE = IS_PRODUCTION
+
+    # SPA fetches its CSRF token once on load and reuses it for the life of
+    # the session rather than re-fetching hourly, so don't expire it separately.
+    WTF_CSRF_TIME_LIMIT = None
+    # Shared across gunicorn workers (in-memory storage would give each
+    # worker its own counter, making the limits meaningless under >1 worker).
+    RATELIMIT_STORAGE_URI = REDIS_URL
 
     # DeepSeek — primary LLM for recommendation ranking/explanations. Key from
     # https://platform.deepseek.com/api_keys. Unset/placeholder values aren't

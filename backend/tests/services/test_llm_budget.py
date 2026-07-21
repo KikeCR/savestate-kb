@@ -24,6 +24,10 @@ class _FakeRedis:
         self.values[key] = self.values.get(key, 0) + amount
         return self.values[key]
 
+    def incrbyfloat(self, key, amount):
+        self.values[key] = float(self.values.get(key, 0)) + amount
+        return self.values[key]
+
     def expire(self, key, ttl):
         self.expiries[key] = ttl
 
@@ -113,3 +117,37 @@ def test_usage_key_is_scoped_to_the_current_month():
     key = llm_budget._usage_key(LLM_PROVIDER_DEEPSEEK, "prompt")
 
     assert time.strftime("%Y-%m") in key
+
+
+def test_try_reserve_budget_holds_when_under_ceiling():
+    redis_client = _FakeRedis()
+
+    held = llm_budget.try_reserve_budget(
+        LLM_PROVIDER_DEEPSEEK, budget_usd=1.0, estimated_cost_usd=0.1, redis_client=redis_client
+    )
+
+    assert held
+    assert redis_client.values[llm_budget._reservation_key(LLM_PROVIDER_DEEPSEEK)] == 0.1
+
+
+def test_try_reserve_budget_rolls_back_when_it_would_exceed_ceiling():
+    redis_client = _FakeRedis()
+    llm_budget.record_usage(LLM_PROVIDER_DEEPSEEK, 1_000_000, 1_000_000, redis_client=redis_client)
+
+    held = llm_budget.try_reserve_budget(
+        LLM_PROVIDER_DEEPSEEK, budget_usd=0.01, estimated_cost_usd=0.1, redis_client=redis_client
+    )
+
+    assert not held
+    assert redis_client.values[llm_budget._reservation_key(LLM_PROVIDER_DEEPSEEK)] == 0
+
+
+def test_release_reservation_decrements_the_reserved_total():
+    redis_client = _FakeRedis()
+    llm_budget.try_reserve_budget(
+        LLM_PROVIDER_DEEPSEEK, budget_usd=1.0, estimated_cost_usd=0.1, redis_client=redis_client
+    )
+
+    llm_budget.release_reservation(LLM_PROVIDER_DEEPSEEK, 0.1, redis_client=redis_client)
+
+    assert redis_client.values[llm_budget._reservation_key(LLM_PROVIDER_DEEPSEEK)] == 0
