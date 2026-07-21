@@ -4,4 +4,6 @@
 	overflow-x: auto;
 	padding-bottom: 1rem;
 	scroll-snap-type: x proximity;
+	justify-content: center;
+	justify-content: safe center;
 }
