@@ -21,9 +21,7 @@ export const Activity = () => {
 			<h1>Activity</h1>
 			{error && <p className="error">{error}</p>}
 			{events.length === 0 ? (
-				<p>
-					No activity yet. Follow other players to see their activity here.
-				</p>
+				<p>No activity yet. Follow other players to see their activity here.</p>
 			) : (
 				<ul className="activity-feed">
 					{events.map((event, i) => (

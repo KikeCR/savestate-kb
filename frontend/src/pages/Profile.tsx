@@ -45,7 +45,11 @@ export const Profile = () => {
 	return (
 		<div>
 			<div className="profile-header-row">
-				<Avatar username={user.username} avatarUrl={user.avatar_url} size={64} />
+				<Avatar
+					username={user.username}
+					avatarUrl={user.avatar_url}
+					size={64}
+				/>
 				<h1>{user.username}</h1>
 			</div>
 			<p className="profile-meta">

@@ -45,7 +45,11 @@ export const NavBar = () => {
 				className="nav-bar__user"
 				aria-label={user.username}
 			>
-				<Avatar username={user.username} avatarUrl={user.avatar_url} size={20} />{' '}
+				<Avatar
+					username={user.username}
+					avatarUrl={user.avatar_url}
+					size={20}
+				/>{' '}
 				<span>{user.username}</span>
 			</Link>
 			<button onClick={handleLogout} aria-label="Log out">

@@ -19,9 +19,7 @@ const useFollowList = (
 		setEntries(null)
 		setError(null)
 		api
-			.get<{ results: FollowListEntry[] }>(
-				`/api/users/${username}/${endpoint}`,
-			)
+			.get<{ results: FollowListEntry[] }>(`/api/users/${username}/${endpoint}`)
 			.then((data) => setEntries(data.results))
 			.catch((err) =>
 				setError(err instanceof Error ? err.message : String(err)),

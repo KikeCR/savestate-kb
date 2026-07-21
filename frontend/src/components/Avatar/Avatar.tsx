@@ -61,7 +61,12 @@ export const Avatar = ({
 	return (
 		<div
 			className={`${classes} avatar--initials`}
-			style={{ width: size, height: size, backgroundColor: color, fontSize: size * 0.4 }}
+			style={{
+				width: size,
+				height: size,
+				backgroundColor: color,
+				fontSize: size * 0.4,
+			}}
 		>
 			{getInitials(username)}
 		</div>

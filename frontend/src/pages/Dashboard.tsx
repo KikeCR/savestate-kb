@@ -113,7 +113,11 @@ export const Dashboard = () => {
 			</div>
 
 			<div className="avatar-edit-row">
-				<Avatar username={user.username} avatarUrl={user.avatar_url} size={48} />
+				<Avatar
+					username={user.username}
+					avatarUrl={user.avatar_url}
+					size={48}
+				/>
 				<input
 					type="url"
 					placeholder="https://example.com/avatar.png"
