@@ -71,6 +71,12 @@ The backend is mapped to host port **5001** instead of 5000. On macOS, port 5000
 
 ## Development notes
 
+- **Pre-commit formatting check.** A git hook blocks commits that touch unformatted frontend files (Prettier `--check` on staged files only, skipped entirely for backend-only commits). Enable it once per clone:
+
+  ```bash
+  git config core.hooksPath .githooks
+  ```
+
 - **Editor tooling needs a local `npm install` too.** The frontend container's `node_modules` lives in a Docker-only anonymous volume that never syncs back to the host, so your editor's TypeScript server won't resolve anything until you also run `npm install` inside `frontend/` on your host machine.
 - **Changing `.env` requires recreating the backend container, not just restarting it.** `docker compose restart backend` reuses the container's existing (stale) environment. After editing `.env`, run `docker compose up -d backend` instead, which recreates the container and re-reads `env_file`.
 - **Database migrations**: after changing a model, generate a migration and apply it:

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Only frontend/ has a formatter (Prettier) wired up so far, and checking the
+# whole tree on every commit would flag pre-existing, unrelated files. Scope
+# the check to staged frontend files Prettier actually handles, and skip
+# entirely for backend-only commits.
+staged_files=$(git diff --cached --name-only --diff-filter=ACMR -- \
+  'frontend/*.ts' 'frontend/*.tsx' 'frontend/*.js' 'frontend/*.jsx' \
+  'frontend/*.css' 'frontend/*.json' 'frontend/*.md' \
+  'frontend/*.yml' 'frontend/*.yaml' \
+  | sed 's#^frontend/##')
+
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
+
+cd frontend
+
+if ! echo "$staged_files" | xargs npx prettier --check; then
+  echo ""
+  echo "Prettier formatting check failed on staged frontend files (see above)."
+  echo "Fix with: (cd frontend && npx prettier --write <file>...), then re-stage and commit again."
+  exit 1
+fi
