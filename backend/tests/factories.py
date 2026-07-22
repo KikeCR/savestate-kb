@@ -1,8 +1,9 @@
 import itertools
 
-from app.constants import DEFAULT_ENTRY_STATUS, DEFAULT_PROFILE_VISIBILITY
+from app.constants import DEFAULT_ENTRY_STATUS, DEFAULT_PROFILE_VISIBILITY, FEEDBACK_LIKED
 from app.models.follow import Follow
 from app.models.game import Game
+from app.models.game_feedback import GameFeedback
 from app.models.user import User
 from app.models.user_game_entry import UserGameEntry
 
@@ -55,3 +56,13 @@ def build_follow(follower, followed, **overrides):
     }
     defaults.update(overrides)
     return Follow(**defaults)
+
+
+def build_game_feedback(user, game, **overrides):
+    defaults = {
+        "user_id": user.id,
+        "game_id": game.id,
+        "sentiment": FEEDBACK_LIKED,
+    }
+    defaults.update(overrides)
+    return GameFeedback(**defaults)

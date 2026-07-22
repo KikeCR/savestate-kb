@@ -106,3 +106,42 @@ def test_search_returns_502_on_rawg_request_failure(logged_in_client, mock_rawg_
     response = logged_in_client.get("/api/games/search", query_string={"q": "timeout-game"})
 
     assert response.status_code == 502
+
+
+def test_popular_games_works_without_authentication(client, make_game):
+    from app.constants import CATALOG_MIN_METACRITIC
+
+    make_game(title="Acclaimed Game", metacritic=CATALOG_MIN_METACRITIC)
+
+    response = client.get("/api/games/popular")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert any(g["title"] == "Acclaimed Game" for g in body["critics"])
+
+
+def test_popular_games_excludes_owned_games_for_authenticated_user(
+    logged_in_client, make_game, make_entry
+):
+    from app.constants import CATALOG_MIN_METACRITIC
+
+    owned = make_game(title="Already Owned", metacritic=CATALOG_MIN_METACRITIC)
+    make_entry(logged_in_client.user, owned)
+
+    response = logged_in_client.get("/api/games/popular")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert not any(g["title"] == "Already Owned" for g in body["critics"])
+
+
+def test_popular_games_does_not_exclude_anything_for_anonymous_user(client, make_game):
+    from app.constants import CATALOG_MIN_METACRITIC
+
+    make_game(title="Some Game", metacritic=CATALOG_MIN_METACRITIC)
+
+    response = client.get("/api/games/popular")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert any(g["title"] == "Some Game" for g in body["critics"])

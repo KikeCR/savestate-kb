@@ -1,0 +1,1 @@
+export { PopularGameCard } from './PopularGameCard'

@@ -132,3 +132,25 @@ export interface RecommendationsResponse {
 	cold_start: boolean
 	recommendations: Recommendation[]
 }
+
+export type FeedbackSentiment = 'liked' | 'disliked'
+
+export interface GameFeedback {
+	id: number
+	game_id: number
+	sentiment: FeedbackSentiment
+	created_at: string
+	updated_at: string
+}
+
+// Must match backend RECOMMENDATION_RESULT_LIMIT (backend/app/constants.py)
+// — there's no shared-constants mechanism across the frontend/backend
+// boundary anywhere in this codebase, so this is intentionally hardcoded
+// and cross-referenced by comment.
+export const VISIBLE_RECOMMENDATION_COUNT = 10
+
+export interface PopularGamesResponse {
+	community_available: boolean
+	community: Game[]
+	critics: Game[]
+}
