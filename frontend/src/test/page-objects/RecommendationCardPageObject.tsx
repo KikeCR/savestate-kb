@@ -73,4 +73,16 @@ export class RecommendationCardPageObject {
 	async clickAdd() {
 		await this.user.click(this.addButton)
 	}
+
+	get toastText(): string | null {
+		return this.container.querySelector('.toast__message')?.textContent ?? null
+	}
+
+	get toastActionButton(): HTMLButtonElement | null {
+		return this.container.querySelector('.toast__action')
+	}
+
+	async clickUndo() {
+		if (this.toastActionButton) await this.user.click(this.toastActionButton)
+	}
 }

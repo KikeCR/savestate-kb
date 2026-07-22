@@ -11,13 +11,23 @@
 	display: inline-flex;
 	align-items: center;
 	gap: 0.35rem;
+	padding: 0.35rem 0.6rem;
+	border-radius: var(--radius-md);
 	font-weight: var(--font-weight-medium);
 	color: var(--color-text);
 	text-decoration: none;
+	transition:
+		background-color 150ms ease,
+		color 150ms ease;
 }
 
 .nav-bar a:hover {
-	text-decoration: underline;
+	background: var(--color-surface-alt);
+}
+
+.nav-bar a.active {
+	background: var(--color-accent-bg);
+	color: var(--color-accent);
 }
 
 .nav-bar__spacer {

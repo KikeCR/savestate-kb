@@ -1,32 +1,55 @@
 import { Plus, Star } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { api } from '../../api/client'
+import { useToast } from '../../context/ToastContext'
 import { Tooltip } from '../Tooltip'
-import type { Recommendation } from '../../types'
+import type { Entry, Recommendation } from '../../types'
 import './RecommendationCard.css'
 
 interface RecommendationCardProps {
 	recommendation: Recommendation
+	index?: number
 	onAdded?: () => void
 	onError?: (message: string) => void
 }
 
 export const RecommendationCard = ({
 	recommendation,
+	index = 0,
 	onAdded,
 	onError,
 }: RecommendationCardProps) => {
 	const { game, reason } = recommendation
 	const [adding, setAdding] = useState(false)
 	const [added, setAdded] = useState(false)
+	// The entrance animation's fill-mode keeps it "in effect" indefinitely,
+	// which per spec forces this card into its own stacking context forever —
+	// that traps the Tooltip's z-index inside one card, so it can't paint
+	// above the next card. Dropping the animation once it finishes releases
+	// the card back to normal (non-isolated) stacking.
+	const [entering, setEntering] = useState(true)
+	const { showToast } = useToast()
 
 	const handleAdd = () => {
 		setAdding(true)
 		api
-			.post('/api/entries', { game_id: game.id, status: 'backlog' })
-			.then(() => {
+			.post<Entry>('/api/entries', { game_id: game.id, status: 'backlog' })
+			.then((entry) => {
 				setAdded(true)
 				onAdded?.()
+				showToast({
+					message: `${game.title} added to your library`,
+					iconUrl: game.cover_image_url,
+					actionLabel: 'Undo',
+					onAction: () => {
+						api
+							.del(`/api/entries/${entry.id}`)
+							.then(() => setAdded(false))
+							.catch((err) =>
+								onError?.(err instanceof Error ? err.message : String(err)),
+							)
+					},
+				})
 			})
 			.catch((err) =>
 				onError?.(err instanceof Error ? err.message : String(err)),
@@ -35,7 +58,15 @@ export const RecommendationCard = ({
 	}
 
 	return (
-		<div className="recommendation-card">
+		<div
+			className={
+				entering
+					? 'recommendation-card recommendation-card--entering'
+					: 'recommendation-card'
+			}
+			style={{ '--stagger-index': index } as CSSProperties}
+			onAnimationEnd={() => setEntering(false)}
+		>
 			<div className="recommendation-card__cover">
 				{game.cover_image_url ? (
 					<img src={game.cover_image_url} alt={game.title} />

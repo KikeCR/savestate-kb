@@ -2,6 +2,7 @@ import { Plus, Search, Trash2 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { api } from '../api/client'
 import { YearSelect } from '../components/YearSelect'
+import { useToast } from '../context/ToastContext'
 import { useAvailableYears } from '../hooks/useAvailableYears'
 import './Library.css'
 import {
@@ -13,6 +14,11 @@ import {
 
 const RATING_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1)
 
+// Matches the .entry-list li exit transition duration in Library.css — the
+// row is kept rendered (with a "removing" class) for this long so it can
+// visually collapse before the delete request actually fires.
+const ENTRY_EXIT_MS = 200
+
 export const Library = () => {
 	const [entries, setEntries] = useState<Entry[]>([])
 	const [query, setQuery] = useState('')
@@ -20,6 +26,8 @@ export const Library = () => {
 	const [searching, setSearching] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 	const [yearFilter, setYearFilter] = useState('all')
+	const [removingIds, setRemovingIds] = useState<Set<number>>(new Set())
+	const { showToast } = useToast()
 
 	const loadEntries = async () => {
 		const data = await api.get<{ results: Entry[] }>('/api/entries')
@@ -59,10 +67,26 @@ export const Library = () => {
 	const handleAdd = async (game: Game) => {
 		setError(null)
 		try {
-			await api.post('/api/entries', { game_id: game.id, status: 'backlog' })
+			const entry = await api.post<Entry>('/api/entries', {
+				game_id: game.id,
+				status: 'backlog',
+			})
 			setResults([])
 			setQuery('')
 			await loadEntries()
+			showToast({
+				message: `${game.title} added to your library`,
+				iconUrl: game.cover_image_url,
+				actionLabel: 'Undo',
+				onAction: () => {
+					api
+						.del(`/api/entries/${entry.id}`)
+						.then(loadEntries)
+						.catch((err) =>
+							setError(err instanceof Error ? err.message : String(err)),
+						)
+				},
+			})
 		} catch (err) {
 			setError(err instanceof Error ? err.message : String(err))
 		}
@@ -86,9 +110,53 @@ export const Library = () => {
 		await loadEntries()
 	}
 
-	const handleDelete = async (entry: Entry) => {
-		await api.del(`/api/entries/${entry.id}`)
-		await loadEntries()
+	const restoreEntry = (entry: Entry) => {
+		api
+			.post('/api/entries', {
+				game_id: entry.game.id,
+				status: entry.status,
+				rating: entry.rating,
+				start_date: entry.start_date,
+				completion_date: entry.completion_date,
+				year_played: entry.year_played,
+				hours_played: entry.hours_played,
+				notes: entry.notes,
+				favorite: entry.favorite,
+				replay_count: entry.replay_count,
+				platform_played: entry.platform_played,
+				tags: entry.tags,
+			})
+			.then(loadEntries)
+			.catch(() =>
+				showToast({
+					message: `Could not undo — ${entry.game.title} is already in your library`,
+					variant: 'error',
+				}),
+			)
+	}
+
+	const handleDelete = (entry: Entry) => {
+		setRemovingIds((current) => new Set(current).add(entry.id))
+		setTimeout(async () => {
+			try {
+				await api.del(`/api/entries/${entry.id}`)
+				await loadEntries()
+				showToast({
+					message: `${entry.game.title} removed from your library`,
+					iconUrl: entry.game.cover_image_url,
+					actionLabel: 'Undo',
+					onAction: () => restoreEntry(entry),
+				})
+			} catch (err) {
+				setError(err instanceof Error ? err.message : String(err))
+			} finally {
+				setRemovingIds((current) => {
+					const next = new Set(current)
+					next.delete(entry.id)
+					return next
+				})
+			}
+		}, ENTRY_EXIT_MS)
 	}
 
 	return (
@@ -151,7 +219,10 @@ export const Library = () => {
 			) : (
 				<ul className="entry-list">
 					{visibleEntries.map((entry) => (
-						<li key={entry.id}>
+						<li
+							key={entry.id}
+							className={removingIds.has(entry.id) ? 'removing' : undefined}
+						>
 							<div className="entry-list__info">
 								{entry.game.cover_image_url && (
 									<img

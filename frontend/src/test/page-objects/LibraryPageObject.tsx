@@ -52,6 +52,22 @@ export class LibraryPageObject {
 		)
 	}
 
+	isRemoving(i: number): boolean {
+		return this.entryRows[i]?.classList.contains('removing') ?? false
+	}
+
+	get toastText(): string | null {
+		return this.container.querySelector('.toast__message')?.textContent ?? null
+	}
+
+	get toastActionButton(): HTMLButtonElement | null {
+		return this.container.querySelector('.toast__action')
+	}
+
+	async clickUndo() {
+		if (this.toastActionButton) await this.user.click(this.toastActionButton)
+	}
+
 	private statusSelectAt(i: number): HTMLSelectElement {
 		return this.entryRows[i]?.querySelectorAll('select')[0] as HTMLSelectElement
 	}

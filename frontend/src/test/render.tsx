@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom'
 
 import { AuthProvider } from '../context/AuthContext'
 import { ThemeProvider } from '../context/ThemeContext'
+import { ToastProvider } from '../context/ToastContext'
 
 interface RenderOptions {
 	route?: string
@@ -22,7 +23,9 @@ export const renderWithProviders = (
 
 	return render(
 		<ThemeProvider>
-			<MemoryRouter initialEntries={[route]}>{tree}</MemoryRouter>
+			<MemoryRouter initialEntries={[route]}>
+				<ToastProvider>{tree}</ToastProvider>
+			</MemoryRouter>
 		</ThemeProvider>,
 	)
 }

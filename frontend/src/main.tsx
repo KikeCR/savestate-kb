@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { App } from './App'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
+import { ToastProvider } from './context/ToastContext'
 import '@fontsource-variable/manrope/index.css'
 import '@fontsource-variable/orbitron/index.css'
 import './index.css'
@@ -14,7 +15,9 @@ createRoot(document.getElementById('root') as HTMLElement).render(
 		<ThemeProvider>
 			<BrowserRouter>
 				<AuthProvider>
-					<App />
+					<ToastProvider>
+						<App />
+					</ToastProvider>
 				</AuthProvider>
 			</BrowserRouter>
 		</ThemeProvider>

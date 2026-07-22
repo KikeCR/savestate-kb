@@ -85,6 +85,22 @@ describe('Recommendations', () => {
 		expect(page.cardTitles).toEqual(['Celeste', 'Hades'])
 	})
 
+	it('staggers each card entrance by its position in the list', async () => {
+		mockGetRoutes(mockedApi, {
+			...authMeRoute(mockUser),
+			[recommendationsPath]: makeRecommendationsResponse({
+				recommendations: [
+					makeRecommendation({ game: makeGame({ id: 1, title: 'Celeste' }) }),
+					makeRecommendation({ game: makeGame({ id: 2, title: 'Hades' }) }),
+				],
+			}),
+		})
+		const page = new RecommendationsPageObject()
+
+		await waitFor(() => expect(page.cardCount).toBe(2))
+		expect(page.cardStaggerIndexes).toEqual(['0', '1'])
+	})
+
 	it('shows a source label distinguishing AI-curated from algorithm picks', async () => {
 		mockGetRoutes(mockedApi, {
 			...authMeRoute(mockUser),

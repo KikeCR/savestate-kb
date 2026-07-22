@@ -89,10 +89,11 @@ export const Recommendations = () => {
 						{SOURCE_LABELS[data.source]}
 					</p>
 					<div className="game-card-grid">
-						{data.recommendations.map((rec) => (
+						{data.recommendations.map((rec, index) => (
 							<RecommendationCard
 								key={rec.game.id}
 								recommendation={rec}
+								index={index}
 								onError={setError}
 							/>
 						))}

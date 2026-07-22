@@ -1,4 +1,4 @@
-import { BookMarked, Clock, Gamepad2, Trophy } from 'lucide-react'
+import { BookMarked, ChevronRight, Clock, Gamepad2, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
@@ -83,7 +83,9 @@ export const Dashboard = () => {
 				Logged in as <strong>{user.username}</strong> ({user.email})
 			</p>
 			<p>
-				<Link to={`/profile/${user.username}`}>View my public profile</Link>
+				<Link to={`/profile/${user.username}`} className="link-action">
+					View my public profile <ChevronRight size={14} />
+				</Link>
 			</p>
 
 			{error && <p className="error">{error}</p>}
@@ -173,7 +175,9 @@ export const Dashboard = () => {
 
 			<div className="page-header-row">
 				<h2>Recent Activity</h2>
-				<Link to="/activity">View all</Link>
+				<Link to="/activity" className="link-action">
+					View all <ChevronRight size={14} />
+				</Link>
 			</div>
 			{recentActivity.length === 0 ? (
 				<p>No activity yet. Follow other players to see their activity here.</p>

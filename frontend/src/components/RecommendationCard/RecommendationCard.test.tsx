@@ -12,6 +12,7 @@ const mockedApi = vi.mocked(api)
 
 beforeEach(() => {
 	mockedApi.post.mockReset()
+	mockedApi.del.mockReset()
 })
 
 describe('RecommendationCard', () => {
@@ -92,6 +93,28 @@ describe('RecommendationCard', () => {
 		})
 		await waitFor(() => expect(card.addButtonText).toContain('Added'))
 		expect(onAdded).toHaveBeenCalled()
+	})
+
+	it('shows a toast with an Undo action after adding, and Undo deletes the entry', async () => {
+		mockedApi.post.mockResolvedValueOnce({ id: 7 })
+		const card = new RecommendationCardPageObject({
+			recommendation: makeRecommendation({
+				game: makeGame({ id: 42, title: 'Hades' }),
+			}),
+		})
+
+		await card.clickAdd()
+
+		await waitFor(() =>
+			expect(card.toastText).toContain('Hades added to your library'),
+		)
+
+		mockedApi.del.mockResolvedValueOnce(undefined)
+		await card.clickUndo()
+
+		expect(mockedApi.del).toHaveBeenCalledWith('/api/entries/7')
+		await waitFor(() => expect(card.addButtonText).toContain('Add to Library'))
+		expect(card.addButton.disabled).toBe(false)
 	})
 
 	it('disables the button while the request is pending', async () => {
