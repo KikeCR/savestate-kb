@@ -57,11 +57,17 @@ export const Profile = () => {
 				Member since {new Date(user.created_at).toLocaleDateString()}
 			</p>
 			<p className="profile-follow-row">
-				<Link to={`/profile/${user.username}/followers`}>
+				<Link
+					to={`/profile/${user.username}/followers`}
+					className="link-action"
+				>
 					{followState.follower_count} Followers
 				</Link>
 				{' · '}
-				<Link to={`/profile/${user.username}/following`}>
+				<Link
+					to={`/profile/${user.username}/following`}
+					className="link-action"
+				>
 					{following_count} Following
 				</Link>
 				{currentUser && !is_owner && (

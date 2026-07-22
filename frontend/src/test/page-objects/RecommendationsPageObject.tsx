@@ -40,6 +40,12 @@ export class RecommendationsPageObject {
 		).map((el) => el.textContent ?? '')
 	}
 
+	get cardStaggerIndexes(): string[] {
+		return Array.from(
+			this.container.querySelectorAll<HTMLElement>('.recommendation-card'),
+		).map((el) => el.style.getPropertyValue('--stagger-index'))
+	}
+
 	get refreshButton() {
 		return screen.getByRole('button', { name: /refresh/i })
 	}

@@ -31,7 +31,7 @@ export const ThinkingIndicator = ({
 
 	return (
 		<div className="thinking-indicator" role="status">
-			<Sparkles size={20} className="thinking-indicator__icon" />
+			<Sparkles size={44} className="thinking-indicator__icon" />
 			{/* key={index} remounts the span on each message change so its
 				fade-in animation replays instead of only running once. */}
 			<span key={index} className="thinking-indicator__text">

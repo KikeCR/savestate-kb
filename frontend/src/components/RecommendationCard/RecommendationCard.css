@@ -7,6 +7,21 @@
 	flex-direction: column;
 }
 
+/* Kept as a separate modifier class, removed once the animation finishes
+   (see RecommendationCard.tsx) — a lingering fill-mode animation on
+   opacity/transform permanently forces a new stacking context, which would
+   trap the Tooltip's z-index inside a single card. */
+.recommendation-card--entering {
+	animation: fade-slide-up 0.35s ease both;
+	animation-delay: calc(var(--stagger-index, 0) * 60ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.recommendation-card--entering {
+		animation: none;
+	}
+}
+
 .recommendation-card__cover {
 	overflow: hidden;
 	border-radius: var(--radius-md) var(--radius-md) 0 0;
