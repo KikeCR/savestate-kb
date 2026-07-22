@@ -57,7 +57,7 @@ Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stac
    docker compose up -d --build
    ```
 
-   This boots four containers: `db` (Postgres, using the `pgvector/pgvector:pg16` image), `redis`, `backend` (Flask, port `5001`), `frontend` (Vite dev server, port `5173`).
+   This boots six containers: `db` (Postgres, using the `pgvector/pgvector:pg16` image), `redis`, `backend` (Flask, port `5001`), `celery` (background task worker — sends email), `mailpit` (fake SMTP server + web inbox, for viewing sent email locally), `frontend` (Vite dev server, port `5173`).
 
 3. **Run database migrations**
 
@@ -75,6 +75,7 @@ Built as a portfolio project targeting a React + Flask + SQLAlchemy + Redis stac
 
    - Frontend: http://localhost:5173
    - Backend health check: http://localhost:5001/health (confirms both Postgres and Redis are reachable)
+   - Mailpit (local email inbox): http://localhost:8025 — welcome/password-reset/password-changed emails all land here in dev instead of a real inbox
 
 ### Ports
 
@@ -143,17 +144,32 @@ The backend is mapped to host port **5001** instead of 5000. On macOS, port 5000
 docker compose exec backend flask sync-catalog
 ```
 
+## Email & Background Tasks
+
+Welcome, password-reset, and password-changed emails are sent by a Celery worker (`celery` service) rather than inline on the request — `POST /api/auth/register`, `/forgot-password`, `/reset-password`, and `/change-password` all just enqueue a task and return immediately. The worker and the web process share the same Redis instance as the broker, on DB index 1 (kept separate from the DB index 0 used for rate-limiting/leaderboards/caching).
+
+Email itself is sent via plain `smtplib` (`backend/app/services/email_service.py`) — no email-specific dependency. In local dev it points at the bundled **Mailpit** container by default, a fake SMTP server with a web inbox at http://localhost:8025, so you can see exactly what would be sent without configuring real credentials. Point `SMTP_HOST`/`SMTP_PORT`/`SMTP_USERNAME`/`SMTP_PASSWORD`/`SMTP_USE_TLS` at a real provider's SMTP relay (SendGrid, Mailgun, SES, etc.) for production — if `SMTP_HOST` is ever unset, sending is skipped with a logged warning rather than erroring.
+
+Password reset tokens expire after 60 minutes; run `flask cleanup-reset-tokens` occasionally (same "no in-process scheduler" caveat as `sync-catalog`) to delete old expired/used ones:
+
+```bash
+docker compose exec backend flask cleanup-reset-tokens
+```
+
 ## Project structure
 
 ```
 backend/
   app/
-    constants.py  # shared enum-like values (entry status, rating bounds, recommendation tuning)
-    cli.py        # flask sync-catalog command
-    models/       # User, Game (+ RAG fields: embedding, metacritic, tags), UserGameEntry
-    routes/       # auth, games, entries, leaderboards, activity, users, recommendations
-    services/     # RAWG client, Redis leaderboards/activity, embeddings (fastembed),
-                   # catalog_sync, llm_client (DeepSeek/Kimi), llm_budget, recommendation_service
+    constants.py    # shared enum-like values (entry status, rating bounds, recommendation tuning)
+    cli.py          # flask sync-catalog / cleanup-reset-tokens commands
+    celery_app.py   # Celery app + Flask-app-context task wrapper
+    tasks.py        # Celery tasks (welcome/password-reset/password-changed email)
+    models/         # User, Game (+ RAG fields), UserGameEntry, PasswordResetToken
+    routes/         # auth, games, entries, leaderboards, activity, users, recommendations
+    services/       # RAWG client, Redis leaderboards/activity, embeddings (fastembed),
+                     # catalog_sync, llm_client (DeepSeek/Kimi), llm_budget,
+                     # recommendation_service, password_policy, email_service
   migrations/      # Flask-Migrate / Alembic
 
 frontend/
@@ -161,11 +177,13 @@ frontend/
     api/          # typed fetch client
     components/   # one folder per component (Component.tsx + .css + index.ts),
                    # e.g. GameCard/, RecommendationCard/, NavBar/, YearSelect/, kanban/
-    context/      # AuthContext, ThemeContext
+    context/      # AuthContext, ThemeContext, ToastContext
     hooks/        # useLocalStorageState, useToggleState, useAvailableYears
-    pages/        # Home, Login, Register, Dashboard, Library, Board, Leaderboards,
-                   # Activity, Profile, Recommendations (each with its own .css)
+    pages/        # Home, Login, Register, ForgotPassword, ResetPassword, Dashboard,
+                   # Library, Board, Leaderboards, Activity, Profile, Recommendations
+                   # (each with its own .css)
     styles/       # shared.css (utility classes reused across pages)
+    utils/        # activityMessage, passwordPolicy
 ```
 
 ## Data attribution

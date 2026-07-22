@@ -1,30 +1,31 @@
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
-import { Login } from '../../pages/Login'
+import { ResetPassword } from '../../pages/ResetPassword'
 import { renderWithProviders } from '../render'
 
-export class LoginPageObject {
+export class ResetPasswordPageObject {
 	private user = userEvent.setup()
 	private container: HTMLElement
 
-	constructor() {
+	constructor(token = 'test-token') {
 		const result = renderWithProviders(
 			<Routes>
-				<Route path="/login" element={<Login />} />
+				<Route path="/reset-password/:token" element={<ResetPassword />} />
 				<Route path="/dashboard" element={<p>Dashboard page</p>} />
+				<Route path="/forgot-password" element={<p>Forgot password page</p>} />
 			</Routes>,
-			{ route: '/login' },
+			{ route: `/reset-password/${token}` },
 		)
 		this.container = result.container
 	}
 
-	get emailInput() {
-		return screen.getByLabelText('Email') as HTMLInputElement
+	get passwordInput() {
+		return screen.getByLabelText('New password') as HTMLInputElement
 	}
 
-	get passwordInput() {
-		return screen.getByLabelText('Password') as HTMLInputElement
+	get confirmPasswordInput() {
+		return screen.getByLabelText('Confirm new password') as HTMLInputElement
 	}
 
 	get submitButton() {
@@ -35,10 +36,6 @@ export class LoginPageObject {
 		return this.submitButton.textContent
 	}
 
-	get isSubmitDisabled() {
-		return this.submitButton.hasAttribute('disabled')
-	}
-
 	get errorMessage(): string | null {
 		return this.container.querySelector('.error')?.textContent ?? null
 	}
@@ -47,21 +44,15 @@ export class LoginPageObject {
 		return this.container.textContent?.includes('Dashboard page') ?? false
 	}
 
-	async fillEmail(value: string) {
-		await this.user.type(this.emailInput, value)
-	}
-
 	async fillPassword(value: string) {
 		await this.user.type(this.passwordInput, value)
 	}
 
-	async submit() {
-		await this.user.click(this.submitButton)
+	async fillConfirmPassword(value: string) {
+		await this.user.type(this.confirmPasswordInput, value)
 	}
 
-	get forgotPasswordLink() {
-		return screen.getByRole('link', {
-			name: 'Forgot password?',
-		}) as HTMLAnchorElement
+	async submit() {
+		await this.user.click(this.submitButton)
 	}
 }

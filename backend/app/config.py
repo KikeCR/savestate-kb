@@ -54,3 +54,26 @@ class Config:
     # in-process, no external API cost. Downloaded on first use if not already
     # cached in the image/container.
     EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "BAAI/bge-small-en-v1.5")
+
+    # Email (welcome/password-reset/password-changed). Defaults point at the
+    # local Mailpit dev container (a fake SMTP server + web inbox at :8025,
+    # no real credentials needed) — see EmailService in
+    # app/services/email_service.py for the unset-SMTP_HOST no-op behavior.
+    # Swap these for a real provider's SMTP relay in production.
+    SMTP_HOST = os.environ.get("SMTP_HOST", "mailpit")
+    SMTP_PORT = int(os.environ.get("SMTP_PORT", "1025"))
+    SMTP_USERNAME = os.environ.get("SMTP_USERNAME", "")
+    SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+    SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "false").lower() == "true"
+    EMAIL_FROM_ADDRESS = os.environ.get("EMAIL_FROM_ADDRESS", "noreply@savestate.local")
+
+    # Celery broker — defaults to the same Redis instance as everything else,
+    # but on DB index 1 instead of 0 so its queue keys don't share a namespace
+    # with rate-limit/leaderboard/cache keys.
+    CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", REDIS_URL.rsplit("/", 1)[0] + "/1")
+    # Read from the environment (rather than only overridden per-Config-
+    # subclass) because app/celery_app.py builds its own Flask app from the
+    # plain base Config at import time, regardless of which Config the rest
+    # of a given process is using — see tests/conftest.py for how the test
+    # suite sets this via the environment before anything imports `app`.
+    CELERY_TASK_ALWAYS_EAGER = os.environ.get("CELERY_TASK_ALWAYS_EAGER", "false").lower() == "true"

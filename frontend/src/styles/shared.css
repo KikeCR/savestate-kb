@@ -28,6 +28,14 @@
 	flex-shrink: 0;
 }
 
+/* Small helper/policy text under a form field (e.g. password requirements),
+   used across auth pages and the Dashboard's change-password form. */
+.field-hint {
+	margin: -0.5rem 0 0;
+	font-size: var(--font-size-xs);
+	color: var(--color-text-secondary);
+}
+
 .year-filter {
 	display: flex;
 	align-items: center;
