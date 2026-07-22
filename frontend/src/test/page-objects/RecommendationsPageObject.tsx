@@ -64,4 +64,28 @@ export class RecommendationsPageObject {
 	async clickRefresh() {
 		await this.user.click(this.refreshButton)
 	}
+
+	private cardByTitle(title: string): HTMLElement {
+		const titleEl = Array.from(
+			this.container.querySelectorAll('.recommendation-card__title'),
+		).find((el) => el.textContent === title)
+		const card = titleEl?.closest('.recommendation-card')
+		if (!card)
+			throw new Error(`No recommendation card found with title "${title}"`)
+		return card as HTMLElement
+	}
+
+	async clickAddOnCard(title: string) {
+		const button = this.cardByTitle(title).querySelector(
+			'.recommendation-card__add',
+		) as HTMLButtonElement
+		await this.user.click(button)
+	}
+
+	async clickDislikeOnCard(title: string) {
+		const button = this.cardByTitle(title).querySelector(
+			'.recommendation-card__dislike',
+		) as HTMLButtonElement
+		await this.user.click(button)
+	}
 }

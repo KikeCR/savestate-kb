@@ -1,27 +1,32 @@
-import { Plus, Star } from 'lucide-react'
+import { Plus, Star, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useState, type CSSProperties } from 'react'
 import { api } from '../../api/client'
 import { useToast } from '../../context/ToastContext'
+import { useAddToLibrary } from '../../hooks/useAddToLibrary'
 import { Tooltip } from '../Tooltip'
-import type { Entry, Recommendation } from '../../types'
+import type { Recommendation } from '../../types'
 import './RecommendationCard.css'
 
 interface RecommendationCardProps {
 	recommendation: Recommendation
 	index?: number
-	onAdded?: () => void
+	isExiting?: boolean
+	onAdded?: (gameId: number) => void
+	onDisliked?: (gameId: number) => void
 	onError?: (message: string) => void
 }
 
 export const RecommendationCard = ({
 	recommendation,
 	index = 0,
+	isExiting = false,
 	onAdded,
+	onDisliked,
 	onError,
 }: RecommendationCardProps) => {
 	const { game, reason } = recommendation
-	const [adding, setAdding] = useState(false)
-	const [added, setAdded] = useState(false)
+	const [liked, setLiked] = useState(false)
+	const [dislikePending, setDislikePending] = useState(false)
 	// The entrance animation's fill-mode keeps it "in effect" indefinitely,
 	// which per spec forces this card into its own stacking context forever —
 	// that traps the Tooltip's z-index inside one card, so it can't paint
@@ -29,41 +34,57 @@ export const RecommendationCard = ({
 	// the card back to normal (non-isolated) stacking.
 	const [entering, setEntering] = useState(true)
 	const { showToast } = useToast()
+	const { adding, added, handleAdd } = useAddToLibrary(game, onAdded, onError)
 
-	const handleAdd = () => {
-		setAdding(true)
+	const reportError = (err: unknown) =>
+		onError?.(err instanceof Error ? err.message : String(err))
+
+	const handleLike = () => {
+		const next = !liked
+		setLiked(next)
+		const request = next
+			? api.put(`/api/recommendations/feedback/${game.id}`, {
+					sentiment: 'liked',
+				})
+			: api.del(`/api/recommendations/feedback/${game.id}`)
+		request.catch((err) => {
+			setLiked(!next)
+			reportError(err)
+		})
+	}
+
+	const handleDislike = () => {
+		setDislikePending(true)
 		api
-			.post<Entry>('/api/entries', { game_id: game.id, status: 'backlog' })
-			.then((entry) => {
-				setAdded(true)
-				onAdded?.()
+			.put(`/api/recommendations/feedback/${game.id}`, {
+				sentiment: 'disliked',
+			})
+			.then(() => {
+				onDisliked?.(game.id)
 				showToast({
-					message: `${game.title} added to your library`,
+					message: `Got it — you won't see ${game.title} again`,
 					iconUrl: game.cover_image_url,
 					actionLabel: 'Undo',
 					onAction: () => {
 						api
-							.del(`/api/entries/${entry.id}`)
-							.then(() => setAdded(false))
-							.catch((err) =>
-								onError?.(err instanceof Error ? err.message : String(err)),
-							)
+							.del(`/api/recommendations/feedback/${game.id}`)
+							.catch(reportError)
 					},
 				})
 			})
-			.catch((err) =>
-				onError?.(err instanceof Error ? err.message : String(err)),
-			)
-			.finally(() => setAdding(false))
+			.catch(reportError)
+			.finally(() => setDislikePending(false))
 	}
 
 	return (
 		<div
-			className={
-				entering
-					? 'recommendation-card recommendation-card--entering'
-					: 'recommendation-card'
-			}
+			className={[
+				'recommendation-card',
+				entering && 'recommendation-card--entering',
+				isExiting && 'recommendation-card--exiting',
+			]
+				.filter(Boolean)
+				.join(' ')}
 			style={{ '--stagger-index': index } as CSSProperties}
 			onAnimationEnd={() => setEntering(false)}
 		>
@@ -94,15 +115,41 @@ export const RecommendationCard = ({
 					))}
 				</div>
 				<p className="recommendation-card__reason">{reason}</p>
-				<button
-					type="button"
-					className="recommendation-card__add"
-					onClick={handleAdd}
-					disabled={adding || added}
-				>
-					<Plus size={14} />{' '}
-					{added ? 'Added' : adding ? 'Adding...' : 'Add to Library'}
-				</button>
+				<div className="recommendation-card__actions">
+					<button
+						type="button"
+						className="recommendation-card__add"
+						onClick={handleAdd}
+						disabled={adding || added}
+					>
+						<Plus size={14} />{' '}
+						{added ? 'Added' : adding ? 'Adding...' : 'Add to Library'}
+					</button>
+					<div className="recommendation-card__feedback">
+						<button
+							type="button"
+							className={
+								liked
+									? 'recommendation-card__like recommendation-card__like--active'
+									: 'recommendation-card__like'
+							}
+							onClick={handleLike}
+							aria-pressed={liked}
+							aria-label="Like this suggestion"
+						>
+							<ThumbsUp size={14} />
+						</button>
+						<button
+							type="button"
+							className="recommendation-card__dislike"
+							onClick={handleDislike}
+							disabled={dislikePending}
+							aria-label="Dislike this suggestion"
+						>
+							<ThumbsDown size={14} />
+						</button>
+					</div>
+				</div>
 			</div>
 		</div>
 	)

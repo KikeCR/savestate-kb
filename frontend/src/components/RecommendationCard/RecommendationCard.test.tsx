@@ -5,13 +5,20 @@ import { makeGame, makeRecommendation } from '../../test/fixtures'
 import { RecommendationCardPageObject } from '../../test/page-objects/RecommendationCardPageObject'
 
 vi.mock('../../api/client', () => ({
-	api: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), del: vi.fn() },
+	api: {
+		get: vi.fn(),
+		post: vi.fn(),
+		put: vi.fn(),
+		patch: vi.fn(),
+		del: vi.fn(),
+	},
 }))
 
 const mockedApi = vi.mocked(api)
 
 beforeEach(() => {
 	mockedApi.post.mockReset()
+	mockedApi.put.mockReset()
 	mockedApi.del.mockReset()
 })
 
@@ -92,7 +99,7 @@ describe('RecommendationCard', () => {
 			status: 'backlog',
 		})
 		await waitFor(() => expect(card.addButtonText).toContain('Added'))
-		expect(onAdded).toHaveBeenCalled()
+		expect(onAdded).toHaveBeenCalledWith(42)
 	})
 
 	it('shows a toast with an Undo action after adding, and Undo deletes the entry', async () => {
@@ -149,5 +156,85 @@ describe('RecommendationCard', () => {
 			expect(onError).toHaveBeenCalledWith('already in your library'),
 		)
 		expect(card.addButton.disabled).toBe(false)
+	})
+
+	it('likes a suggestion and toggles it back off on a second click', async () => {
+		mockedApi.put.mockResolvedValue({ id: 1, game_id: 42, sentiment: 'liked' })
+		mockedApi.del.mockResolvedValue(undefined)
+		const card = new RecommendationCardPageObject({
+			recommendation: makeRecommendation({ game: makeGame({ id: 42 }) }),
+		})
+
+		await card.clickLike()
+		expect(mockedApi.put).toHaveBeenCalledWith(
+			'/api/recommendations/feedback/42',
+			{
+				sentiment: 'liked',
+			},
+		)
+		await waitFor(() => expect(card.isLiked).toBe(true))
+
+		await card.clickLike()
+		expect(mockedApi.del).toHaveBeenCalledWith(
+			'/api/recommendations/feedback/42',
+		)
+		await waitFor(() => expect(card.isLiked).toBe(false))
+	})
+
+	it('reverts the like toggle and calls onError when the request fails', async () => {
+		mockedApi.put.mockRejectedValueOnce(new Error('server exploded'))
+		const onError = vi.fn()
+		const card = new RecommendationCardPageObject({
+			recommendation: makeRecommendation({ game: makeGame({ id: 42 }) }),
+			onError,
+		})
+
+		await card.clickLike()
+
+		await waitFor(() => expect(onError).toHaveBeenCalledWith('server exploded'))
+		expect(card.isLiked).toBe(false)
+	})
+
+	it('dislikes a suggestion, calls onDisliked, and shows an Undo toast', async () => {
+		mockedApi.put.mockResolvedValueOnce({
+			id: 1,
+			game_id: 42,
+			sentiment: 'disliked',
+		})
+		const onDisliked = vi.fn()
+		const card = new RecommendationCardPageObject({
+			recommendation: makeRecommendation({
+				game: makeGame({ id: 42, title: 'Hades' }),
+			}),
+			onDisliked,
+		})
+
+		await card.clickDislike()
+
+		expect(mockedApi.put).toHaveBeenCalledWith(
+			'/api/recommendations/feedback/42',
+			{
+				sentiment: 'disliked',
+			},
+		)
+		await waitFor(() => expect(onDisliked).toHaveBeenCalledWith(42))
+		await waitFor(() =>
+			expect(card.toastText).toContain("won't see Hades again"),
+		)
+
+		mockedApi.del.mockResolvedValueOnce(undefined)
+		await card.clickUndo()
+		expect(mockedApi.del).toHaveBeenCalledWith(
+			'/api/recommendations/feedback/42',
+		)
+	})
+
+	it('applies the exiting class when isExiting is true', () => {
+		const card = new RecommendationCardPageObject({
+			recommendation: makeRecommendation(),
+			isExiting: true,
+		})
+
+		expect(card.isExiting).toBe(true)
 	})
 })

@@ -1,25 +1,54 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Only frontend/ has a formatter (Prettier) wired up so far, and checking the
-# whole tree on every commit would flag pre-existing, unrelated files. Scope
-# the check to staged frontend files Prettier actually handles, and skip
-# entirely for backend-only commits.
-staged_files=$(git diff --cached --name-only --diff-filter=ACMR -- \
+# Scope each check to staged files in its own tree, and skip entirely when a
+# commit doesn't touch that tree — checking the whole repo on every commit
+# would flag pre-existing, unrelated files.
+frontend_staged=$(git diff --cached --name-only --diff-filter=ACMR -- \
   'frontend/*.ts' 'frontend/*.tsx' 'frontend/*.js' 'frontend/*.jsx' \
   'frontend/*.css' 'frontend/*.json' 'frontend/*.md' \
   'frontend/*.yml' 'frontend/*.yaml' \
   | sed 's#^frontend/##')
 
-if [ -z "$staged_files" ]; then
-  exit 0
+if [ -n "$frontend_staged" ]; then
+  (
+    cd frontend
+    if ! echo "$frontend_staged" | xargs npx prettier --check; then
+      echo ""
+      echo "Prettier formatting check failed on staged frontend files (see above)."
+      echo "Fix with: (cd frontend && npx prettier --write <file>...), then re-stage and commit again."
+      exit 1
+    fi
+  )
 fi
 
-cd frontend
+backend_staged=$(git diff --cached --name-only --diff-filter=ACMR -- 'backend/*.py' \
+  | sed 's#^backend/##')
 
-if ! echo "$staged_files" | xargs npx prettier --check; then
-  echo ""
-  echo "Prettier formatting check failed on staged frontend files (see above)."
-  echo "Fix with: (cd frontend && npx prettier --write <file>...), then re-stage and commit again."
-  exit 1
+if [ -n "$backend_staged" ]; then
+  (
+    cd backend
+
+    if [ -f .venv/bin/activate ]; then
+      source .venv/bin/activate
+    elif ! command -v ruff >/dev/null 2>&1; then
+      echo "ruff isn't available (no backend/.venv and no ruff on PATH)."
+      echo "Set up the backend venv (see backend/requirements-dev.txt) and try again."
+      exit 1
+    fi
+
+    if ! echo "$backend_staged" | xargs ruff check; then
+      echo ""
+      echo "Ruff lint check failed on staged backend files (see above)."
+      echo "Fix with: (cd backend && ruff check --fix <file>...), then re-stage and commit again."
+      exit 1
+    fi
+
+    if ! echo "$backend_staged" | xargs ruff format --check; then
+      echo ""
+      echo "Ruff formatting check failed on staged backend files (see above)."
+      echo "Fix with: (cd backend && ruff format <file>...), then re-stage and commit again."
+      exit 1
+    fi
+  )
 fi

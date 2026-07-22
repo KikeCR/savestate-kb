@@ -42,4 +42,15 @@ describe('NavBar', () => {
 		expect(nav.isActive(mockUser.username)).toBe(true)
 		expect(nav.isActive('Dashboard')).toBe(false)
 	})
+
+	it('marks Home active only on the homepage itself, not on other routes', async () => {
+		const onHome = new NavBarPageObject('/')
+		await waitFor(() => expect(onHome.links.length).toBeGreaterThan(0))
+		expect(onHome.isActive('Home')).toBe(true)
+
+		const onLibrary = new NavBarPageObject('/library')
+		await waitFor(() => expect(onLibrary.links.length).toBeGreaterThan(0))
+		expect(onLibrary.isActive('Home')).toBe(false)
+		expect(onLibrary.isActive('Library')).toBe(true)
+	})
 })

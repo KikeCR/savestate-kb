@@ -7,3 +7,47 @@
 	color: var(--color-text-secondary);
 	margin: 0 0 1rem;
 }
+
+.recommendations__refresh {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.45rem 0.9rem;
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--color-text);
+	background: transparent;
+	border: 1px solid var(--color-border);
+	border-radius: 999px;
+	transition:
+		background-color 0.15s ease,
+		border-color 0.15s ease,
+		color 0.15s ease;
+}
+
+.recommendations__refresh:hover:not(:disabled) {
+	background: var(--color-accent-bg);
+	border-color: var(--color-accent);
+	color: var(--color-accent);
+}
+
+.recommendations__refresh:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.recommendations__refresh--spinning svg {
+	animation: recommendations-refresh-spin 0.8s linear infinite;
+}
+
+@keyframes recommendations-refresh-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.recommendations__refresh--spinning svg {
+		animation: none;
+	}
+}

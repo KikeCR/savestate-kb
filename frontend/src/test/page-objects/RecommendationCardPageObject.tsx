@@ -9,7 +9,9 @@ export class RecommendationCardPageObject {
 
 	constructor(props: {
 		recommendation: Recommendation
-		onAdded?: () => void
+		isExiting?: boolean
+		onAdded?: (gameId: number) => void
+		onDisliked?: (gameId: number) => void
 		onError?: (message: string) => void
 	}) {
 		const { container } = renderWithProviders(
@@ -72,6 +74,38 @@ export class RecommendationCardPageObject {
 
 	async clickAdd() {
 		await this.user.click(this.addButton)
+	}
+
+	get likeButton(): HTMLButtonElement {
+		return this.container.querySelector(
+			'.recommendation-card__like',
+		) as HTMLButtonElement
+	}
+
+	get dislikeButton(): HTMLButtonElement {
+		return this.container.querySelector(
+			'.recommendation-card__dislike',
+		) as HTMLButtonElement
+	}
+
+	get isLiked(): boolean {
+		return this.likeButton?.getAttribute('aria-pressed') === 'true'
+	}
+
+	get isExiting(): boolean {
+		return (
+			this.container
+				.querySelector('.recommendation-card')
+				?.classList.contains('recommendation-card--exiting') ?? false
+		)
+	}
+
+	async clickLike() {
+		await this.user.click(this.likeButton)
+	}
+
+	async clickDislike() {
+		await this.user.click(this.dislikeButton)
 	}
 
 	get toastText(): string | null {

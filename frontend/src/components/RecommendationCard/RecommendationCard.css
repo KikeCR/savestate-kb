@@ -7,10 +7,6 @@
 	flex-direction: column;
 }
 
-/* Kept as a separate modifier class, removed once the animation finishes
-   (see RecommendationCard.tsx) — a lingering fill-mode animation on
-   opacity/transform permanently forces a new stacking context, which would
-   trap the Tooltip's z-index inside a single card. */
 .recommendation-card--entering {
 	animation: fade-slide-up 0.35s ease both;
 	animation-delay: calc(var(--stagger-index, 0) * 60ms);
@@ -19,6 +15,21 @@
 @media (prefers-reduced-motion: reduce) {
 	.recommendation-card--entering {
 		animation: none;
+	}
+}
+
+.recommendation-card--exiting {
+	opacity: 0;
+	transform: scale(0.96);
+	transition:
+		opacity 0.2s ease,
+		transform 0.2s ease;
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.recommendation-card--exiting {
+		transition: none;
 	}
 }
 
@@ -90,7 +101,86 @@
 	flex: 1;
 }
 
+.recommendation-card__actions {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 0.5rem;
+}
+
 .recommendation-card__add {
 	justify-content: center;
+	width: 100%;
+	padding: 0.55rem 0.75rem;
 	font-size: var(--font-size-xs);
+	font-weight: var(--font-weight-semibold);
+	color: #fff;
+	background: var(--color-accent);
+	border: none;
+	border-radius: var(--radius-md);
+	transition:
+		filter 0.15s ease,
+		opacity 0.15s ease;
+}
+
+.recommendation-card__add:hover:not(:disabled) {
+	background: var(--color-accent);
+	filter: brightness(1.12);
+}
+
+.recommendation-card__add:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+.recommendation-card__feedback {
+	display: inline-flex;
+	align-self: flex-end;
+	border: 1px solid var(--color-border);
+	border-radius: 999px;
+	overflow: hidden;
+}
+
+.recommendation-card__like,
+.recommendation-card__dislike {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.3rem 0.55rem;
+	color: var(--color-text-muted);
+	background: transparent;
+	border: none;
+	border-radius: 0;
+	transition:
+		background-color 0.15s ease,
+		color 0.15s ease;
+}
+
+.recommendation-card__like {
+	border-right: 1px solid var(--color-border);
+}
+
+.recommendation-card__like:hover,
+.recommendation-card__dislike:hover:not(:disabled) {
+	background: var(--color-surface-alt);
+	color: var(--color-text);
+}
+
+.recommendation-card__like--active {
+	color: var(--color-accent);
+	background: var(--color-accent-bg);
+}
+
+.recommendation-card__like--active:hover {
+	background: var(--color-accent-bg);
+	color: var(--color-accent);
+}
+
+.recommendation-card__dislike:hover:not(:disabled) {
+	color: var(--color-error-text);
+}
+
+.recommendation-card__dislike:disabled {
+	opacity: 0.5;
+	cursor: default;
 }

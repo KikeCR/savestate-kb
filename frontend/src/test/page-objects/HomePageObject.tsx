@@ -24,4 +24,20 @@ export class HomePageObject {
 	get showsWelcomeBack(): boolean {
 		return this.container.textContent?.includes('Welcome back') ?? false
 	}
+
+	get sectionHeadings(): string[] {
+		return Array.from(this.container.querySelectorAll('.home-section h2')).map(
+			(el) => el.textContent ?? '',
+		)
+	}
+
+	get popularCardTitles(): string[] {
+		return Array.from(
+			this.container.querySelectorAll('.popular-game-card__title'),
+		).map((el) => el.textContent ?? '')
+	}
+
+	get errorText(): string | null {
+		return this.container.querySelector('.error')?.textContent ?? null
+	}
 }

@@ -7,7 +7,15 @@ from app.constants import LLM_PROVIDER_DEEPSEEK, LLM_PROVIDER_KIMI
 from app.services import llm_budget
 
 REQUEST_TIMEOUT = 15
-MAX_OUTPUT_TOKENS = 800
+# Sized for RECOMMENDATION_RESERVE_LIMIT (20) {"index", "reason"} objects —
+# recommendation_service asks for a full reserve batch in one call rather
+# than just the RECOMMENDATION_RESULT_LIMIT (10) shown immediately, so this
+# needs roughly double what 10 objects alone would require. A truncated
+# response fails json.loads and is treated the same as any other provider
+# failure (falls through to the next provider, then the templated
+# fallback) — a silent quality regression rather than a crash, so this is
+# worth re-checking if the reserve size ever grows further.
+MAX_OUTPUT_TOKENS = 1600
 # ~4 characters per token is a standard rough heuristic for English text —
 # good enough to reserve a worst-case budget slice before a call, not meant
 # to be an exact token count (the real one comes back in the response).

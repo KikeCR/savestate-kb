@@ -2,10 +2,12 @@ import json
 
 import requests
 from flask import Blueprint, jsonify, request
-from flask_login import login_required
+from flask_login import current_user, login_required
 
 from app.extensions import db, limiter, redis_client
 from app.models.game import Game
+from app.models.user_game_entry import UserGameEntry
+from app.services import popular_games_service
 from app.services.rawg_client import (
     RAWG_SEARCH_CACHE_TTL_SECONDS,
     RAWG_SEARCH_KEY_PREFIX,
@@ -21,6 +23,23 @@ SEARCH_RESULT_LIMIT = 20
 
 def _escape_like(value):
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+@games_bp.route("/popular")
+def popular_games():
+    """Public homepage endpoint — no login required, since it's meant to be
+    useful to logged-out visitors too. When a session IS authenticated,
+    games already in that user's library are excluded from both lists.
+    """
+    exclude_game_ids = None
+    if current_user.is_authenticated:
+        exclude_game_ids = {
+            row.game_id
+            for row in UserGameEntry.query.filter_by(user_id=current_user.id).with_entities(
+                UserGameEntry.game_id
+            )
+        }
+    return jsonify(popular_games_service.get_popular_games(exclude_game_ids))
 
 
 @games_bp.route("/search")

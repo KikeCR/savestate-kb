@@ -41,9 +41,9 @@ def test_second_call_is_served_from_cache(app, make_user, make_game, make_entry,
         call_count = {"n": 0}
         real_compute = recommendation_service._compute_recommendations
 
-        def counting_compute(user_id):
+        def counting_compute(user_id, redis_client=None):
             call_count["n"] += 1
-            return real_compute(user_id)
+            return real_compute(user_id, redis_client)
 
         monkeypatch.setattr(recommendation_service, "_compute_recommendations", counting_compute)
 
@@ -65,9 +65,9 @@ def test_force_refresh_recomputes_even_when_cached(
         call_count = {"n": 0}
         real_compute = recommendation_service._compute_recommendations
 
-        def counting_compute(user_id):
+        def counting_compute(user_id, redis_client=None):
             call_count["n"] += 1
-            return real_compute(user_id)
+            return real_compute(user_id, redis_client)
 
         monkeypatch.setattr(recommendation_service, "_compute_recommendations", counting_compute)
 
@@ -115,3 +115,56 @@ def test_get_refresh_cooldown_seconds_remaining_reflects_ttl(app, make_user):
         remaining = recommendation_service.get_refresh_cooldown_seconds_remaining(user.id)
 
     assert 0 < remaining <= RECOMMENDATION_REFRESH_COOLDOWN_SECONDS
+
+
+def test_feedback_change_invalidates_cache_for_next_fetch(
+    app, make_user, make_game, make_entry, make_game_feedback, monkeypatch
+):
+    from app.constants import FEEDBACK_DISLIKED
+    from app.extensions import redis_client
+
+    user = make_user()
+    with app.app_context():
+        _add_taste_signals(make_game, make_entry, user)
+        game = make_game(title="Cached Pick", metacritic=80, embedding=_vector(1.0))
+        recommendation_service.get_recommendations(user.id)
+        assert redis_client.get(recommendation_service._cache_key(user.id)) is not None
+
+        make_game_feedback(user, game, sentiment=FEEDBACK_DISLIKED)
+        recommendation_service.invalidate_cache(user.id)
+
+        assert redis_client.get(recommendation_service._cache_key(user.id)) is None
+
+
+def test_topup_does_not_touch_base_cache_key(app, make_user, make_game, make_entry):
+    from app.extensions import redis_client
+
+    user = make_user()
+    with app.app_context():
+        _add_taste_signals(make_game, make_entry, user)
+        make_game(title="Topup Pick", metacritic=80, embedding=_vector(1.0))
+
+        recommendation_service.get_topup_recommendations(user.id)
+
+        assert redis_client.get(recommendation_service._cache_key(user.id)) is None
+
+
+def test_try_reserve_topup_slot_enforces_max_per_window(app, make_user):
+    from app.constants import RECOMMENDATION_TOPUP_MAX_PER_WINDOW
+
+    user = make_user()
+    with app.app_context():
+        for _ in range(RECOMMENDATION_TOPUP_MAX_PER_WINDOW):
+            assert recommendation_service.try_reserve_topup_slot(user.id) is True
+
+        assert recommendation_service.try_reserve_topup_slot(user.id) is False
+
+
+def test_topup_cooldown_reflects_lock_state(app, make_user):
+    user = make_user()
+    with app.app_context():
+        assert recommendation_service.is_topup_on_cooldown(user.id) is False
+
+        recommendation_service.start_topup_cooldown(user.id)
+
+        assert recommendation_service.is_topup_on_cooldown(user.id) is True

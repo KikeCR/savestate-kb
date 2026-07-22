@@ -31,22 +31,19 @@
 	pointer-events: none;
 }
 
-.tooltip__bubble::before,
 .tooltip__bubble::after {
 	content: '';
 	position: absolute;
 	top: 100%;
 	left: 14px;
-	border: 5px solid transparent;
-}
-
-.tooltip__bubble::before {
-	margin-top: -1px;
-	border-top-color: var(--color-border);
-}
-
-.tooltip__bubble::after {
-	border-top-color: var(--color-surface);
+	width: 10px;
+	height: 10px;
+	margin-top: -5px;
+	background: var(--color-surface);
+	border-right: 1px solid var(--color-border);
+	border-bottom: 1px solid var(--color-border);
+	transform: rotate(45deg);
+	z-index: -1;
 }
 
 .tooltip:hover .tooltip__bubble,

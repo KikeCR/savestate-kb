@@ -1,5 +1,6 @@
 import {
 	Activity as ActivityIcon,
+	Home as HomeIcon,
 	KanbanSquare,
 	LayoutDashboard,
 	Library as LibraryIcon,
@@ -28,6 +29,9 @@ export const NavBar = () => {
 
 	return (
 		<nav className="nav-bar">
+			<NavLink to="/" end aria-label="Home" className={navLinkClassName}>
+				<HomeIcon size={16} /> <span>Home</span>
+			</NavLink>
 			<NavLink
 				to="/dashboard"
 				aria-label="Dashboard"
