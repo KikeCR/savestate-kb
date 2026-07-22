@@ -14,6 +14,12 @@ MIN_PASSWORD_LENGTH = 8
 MAX_HOURS_PLAYED = 100_000
 MAX_REPLAY_COUNT = 1_000
 
+PASSWORD_POLICY_HINT = (
+    f"at least {MIN_PASSWORD_LENGTH} characters, including one uppercase "
+    "letter and one special character"
+)
+PASSWORD_RESET_TOKEN_EXPIRY_MINUTES = 60
+
 ACTIVITY_ACTIONS = ["added", "completed", "rated", "logged_year"]
 
 AVATAR_URL_MAX_LENGTH = 500

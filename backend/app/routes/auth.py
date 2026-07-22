@@ -1,12 +1,26 @@
+import hashlib
+import secrets
+from datetime import datetime, timedelta, timezone
+
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required, login_user, logout_user
 from flask_wtf.csrf import generate_csrf
 
-from app.constants import AVATAR_URL_MAX_LENGTH, MIN_PASSWORD_LENGTH, PROFILE_VISIBILITIES
+from app.constants import (
+    AVATAR_URL_MAX_LENGTH,
+    PASSWORD_RESET_TOKEN_EXPIRY_MINUTES,
+    PROFILE_VISIBILITIES,
+)
 from app.extensions import db, limiter
+from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
+from app.services import password_policy
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
+
+
+def _hash_token(raw_token):
+    return hashlib.sha256(raw_token.encode()).hexdigest()
 
 
 @auth_bp.route("/csrf")
@@ -24,10 +38,9 @@ def register():
 
     if not email or not username or not password:
         return jsonify({"error": "email, username, and password are required"}), 400
-    if len(password) < MIN_PASSWORD_LENGTH:
-        return jsonify(
-            {"error": f"password must be at least {MIN_PASSWORD_LENGTH} characters"}
-        ), 400
+    password_error = password_policy.validate_password(password)
+    if password_error:
+        return jsonify({"error": password_error}), 400
 
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "email already registered"}), 409
@@ -40,6 +53,11 @@ def register():
     db.session.commit()
 
     login_user(user)
+
+    from app.tasks import send_welcome_email_task
+
+    send_welcome_email_task.delay(user.id)
+
     return jsonify(user.to_private_dict()), 201
 
 
@@ -56,6 +74,95 @@ def login():
 
     login_user(user)
     return jsonify(user.to_private_dict())
+
+
+@auth_bp.route("/forgot-password", methods=["POST"])
+@limiter.limit("5 per minute")
+def forgot_password():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    # Always the same response regardless of whether the email exists, so
+    # this endpoint can't be used to enumerate registered accounts.
+    generic_response = jsonify(
+        {"message": "if that email is registered, a reset link has been sent"}
+    )
+
+    user = User.query.filter_by(email=email).first() if email else None
+    if user:
+        PasswordResetToken.query.filter_by(user_id=user.id, used_at=None).delete()
+
+        raw_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(timezone.utc) + timedelta(
+            minutes=PASSWORD_RESET_TOKEN_EXPIRY_MINUTES
+        )
+        db.session.add(
+            PasswordResetToken(
+                user_id=user.id, token_hash=_hash_token(raw_token), expires_at=expires_at
+            )
+        )
+        db.session.commit()
+
+        from app.tasks import send_password_reset_email_task
+
+        send_password_reset_email_task.delay(user.id, raw_token)
+
+    return generic_response
+
+
+@auth_bp.route("/reset-password", methods=["POST"])
+@limiter.limit("10 per minute")
+def reset_password():
+    data = request.get_json(silent=True) or {}
+    raw_token = data.get("token") or ""
+    password = data.get("password") or ""
+
+    if not raw_token:
+        return jsonify({"error": "token is required"}), 400
+    password_error = password_policy.validate_password(password)
+    if password_error:
+        return jsonify({"error": password_error}), 400
+
+    reset_token = PasswordResetToken.query.filter_by(token_hash=_hash_token(raw_token)).first()
+    if not reset_token or not reset_token.is_valid():
+        return jsonify({"error": "this reset link is invalid or has expired"}), 400
+
+    user = db.session.get(User, reset_token.user_id)
+    user.set_password(password)
+    reset_token.used_at = datetime.now(timezone.utc)
+    db.session.commit()
+
+    login_user(user)
+
+    from app.tasks import send_password_changed_email_task
+
+    send_password_changed_email_task.delay(user.id)
+
+    return jsonify(user.to_private_dict())
+
+
+@auth_bp.route("/change-password", methods=["POST"])
+@login_required
+@limiter.limit("10 per minute")
+def change_password():
+    data = request.get_json(silent=True) or {}
+    current_password = data.get("current_password") or ""
+    new_password = data.get("new_password") or ""
+
+    if not current_user.check_password(current_password):
+        return jsonify({"error": "current password is incorrect"}), 401
+
+    password_error = password_policy.validate_password(new_password)
+    if password_error:
+        return jsonify({"error": password_error}), 400
+
+    current_user.set_password(new_password)
+    db.session.commit()
+
+    from app.tasks import send_password_changed_email_task
+
+    send_password_changed_email_task.delay(current_user.id)
+
+    return jsonify(current_user.to_private_dict())
 
 
 @auth_bp.route("/logout", methods=["POST"])

@@ -30,13 +30,13 @@ describe('Register', () => {
 
 		await register.fillEmail('jane@example.com')
 		await register.fillUsername('jane')
-		await register.fillPassword('password123')
+		await register.fillPassword('Password123!')
 		await register.submit()
 
 		expect(mockedApi.post).toHaveBeenCalledWith('/api/auth/register', {
 			email: 'jane@example.com',
 			username: 'jane',
-			password: 'password123',
+			password: 'Password123!',
 		})
 		await waitFor(() => expect(register.isOnDashboard).toBe(true))
 	})
@@ -48,11 +48,24 @@ describe('Register', () => {
 
 		await register.fillEmail('jane@example.com')
 		await register.fillUsername('jane')
-		await register.fillPassword('password123')
+		await register.fillPassword('Password123!')
 		await register.submit()
 
 		await waitFor(() =>
 			expect(register.errorMessage).toBe('Email already registered'),
 		)
+	})
+
+	it('rejects a policy-violating password without calling the API', async () => {
+		mockAuthMe(mockedApi, null)
+		const register = new RegisterPageObject()
+
+		await register.fillEmail('jane@example.com')
+		await register.fillUsername('jane')
+		await register.fillPassword('weakpass')
+		await register.submit()
+
+		expect(register.errorMessage).toContain('password must contain')
+		expect(mockedApi.post).not.toHaveBeenCalled()
 	})
 })

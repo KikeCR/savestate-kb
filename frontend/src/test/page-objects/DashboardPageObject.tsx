@@ -80,4 +80,40 @@ export class DashboardPageObject {
 	async clickClear() {
 		await this.user.click(this.clearButton)
 	}
+
+	get changePasswordTab() {
+		return screen.getByRole('tab', { name: 'Change Password' })
+	}
+
+	async openChangePasswordTab() {
+		await this.user.click(this.changePasswordTab)
+	}
+
+	get currentPasswordInput() {
+		return screen.getByLabelText('Current password') as HTMLInputElement
+	}
+
+	get newPasswordInput() {
+		return screen.getByLabelText('New password') as HTMLInputElement
+	}
+
+	get confirmNewPasswordInput() {
+		return screen.getByLabelText('Confirm new password') as HTMLInputElement
+	}
+
+	get updatePasswordButton() {
+		return screen.getByRole('button', { name: /Update password|Updating/ })
+	}
+
+	async changePassword(current: string, next: string, confirm: string) {
+		await this.openChangePasswordTab()
+		await this.user.type(this.currentPasswordInput, current)
+		await this.user.type(this.newPasswordInput, next)
+		await this.user.type(this.confirmNewPasswordInput, confirm)
+		await this.user.click(this.updatePasswordButton)
+	}
+
+	get toastText(): string | null {
+		return this.container.querySelector('.toast__message')?.textContent ?? null
+	}
 }

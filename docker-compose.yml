@@ -40,6 +40,8 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-savestate}:${POSTGRES_PASSWORD:-savestate}@db:5432/${POSTGRES_DB:-savestate}
       REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
     ports:
       - "5001:5000"
     volumes:
@@ -49,6 +51,35 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+
+  celery:
+    build: ./backend
+    restart: unless-stopped
+    command: ["celery", "-A", "app.celery_app.celery", "worker", "--loglevel=info"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-savestate}:${POSTGRES_PASSWORD:-savestate}@db:5432/${POSTGRES_DB:-savestate}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Local-dev-only fake SMTP server + web inbox — lets emails (welcome,
+  # password reset, password changed) be seen at http://localhost:8025
+  # without needing real SMTP credentials. Point SMTP_HOST/PORT at a real
+  # provider's relay in production instead.
+  mailpit:
+    image: axllent/mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
 
   frontend:
     build: ./frontend

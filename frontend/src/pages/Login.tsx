@@ -53,6 +53,9 @@ export const Login = () => {
 				</button>
 			</form>
 			<p>
+				<Link to="/forgot-password">Forgot password?</Link>
+			</p>
+			<p>
 				No account? <Link to="/register">Register</Link>
 			</p>
 		</div>

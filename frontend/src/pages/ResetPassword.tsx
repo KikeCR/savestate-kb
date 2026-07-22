@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
 	PASSWORD_POLICY_HINT,
@@ -7,12 +7,12 @@ import {
 } from '../utils/passwordPolicy'
 import './AuthForm.css'
 
-export const Register = () => {
-	const { register } = useAuth()
+export const ResetPassword = () => {
+	const { token } = useParams<{ token: string }>()
+	const { resetPassword } = useAuth()
 	const navigate = useNavigate()
-	const [email, setEmail] = useState('')
-	const [username, setUsername] = useState('')
 	const [password, setPassword] = useState('')
+	const [confirmPassword, setConfirmPassword] = useState('')
 	const [error, setError] = useState<string | null>(null)
 	const [submitting, setSubmitting] = useState(false)
 
@@ -20,6 +20,10 @@ export const Register = () => {
 		e.preventDefault()
 		setError(null)
 
+		if (password !== confirmPassword) {
+			setError('passwords do not match')
+			return
+		}
 		const policyError = passwordPolicyError(password)
 		if (policyError) {
 			setError(policyError)
@@ -28,7 +32,7 @@ export const Register = () => {
 
 		setSubmitting(true)
 		try {
-			await register(email, username, password)
+			await resetPassword(token ?? '', password)
 			navigate('/dashboard')
 		} catch (err) {
 			setError(err instanceof Error ? err.message : String(err))
@@ -39,28 +43,10 @@ export const Register = () => {
 
 	return (
 		<div className="auth-form">
-			<h1>Create an account</h1>
+			<h1>Reset password</h1>
 			<form onSubmit={handleSubmit}>
 				<label>
-					Email
-					<input
-						type="email"
-						value={email}
-						onChange={(e) => setEmail(e.target.value)}
-						required
-					/>
-				</label>
-				<label>
-					Username
-					<input
-						type="text"
-						value={username}
-						onChange={(e) => setUsername(e.target.value)}
-						required
-					/>
-				</label>
-				<label>
-					Password
+					New password
 					<input
 						type="password"
 						value={password}
@@ -70,13 +56,23 @@ export const Register = () => {
 					/>
 				</label>
 				<p className="field-hint">{PASSWORD_POLICY_HINT}</p>
+				<label>
+					Confirm new password
+					<input
+						type="password"
+						value={confirmPassword}
+						onChange={(e) => setConfirmPassword(e.target.value)}
+						minLength={8}
+						required
+					/>
+				</label>
 				{error && <p className="error">{error}</p>}
 				<button type="submit" disabled={submitting}>
-					{submitting ? 'Creating account...' : 'Register'}
+					{submitting ? 'Resetting...' : 'Reset password'}
 				</button>
 			</form>
 			<p>
-				Already have an account? <Link to="/login">Log in</Link>
+				<Link to="/forgot-password">Request a new link</Link>
 			</p>
 		</div>
 	)

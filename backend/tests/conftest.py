@@ -1,3 +1,12 @@
+import os
+
+# Must be set before the first `from app...` import: app/celery_app.py builds
+# its own Flask app from the plain base Config at import time (triggered as a
+# side effect of importing the auth blueprint below), so this can't be set via
+# a TestConfig class attribute alone — it has to be in the environment before
+# app.config's Config class body ever gets evaluated.
+os.environ["CELERY_TASK_ALWAYS_EAGER"] = "true"
+
 import pytest
 from sqlalchemy import text
 from testcontainers.postgres import PostgresContainer
@@ -37,6 +46,14 @@ def app(postgres_container, redis_container):
         # the real per-IP limits and fail on rate limiting, not on the
         # behavior under test. Rate limiting itself is covered separately.
         RATELIMIT_ENABLED = False
+        # Route tests run on the host, outside the docker-compose network, so
+        # the "mailpit" hostname the base Config defaults to won't resolve —
+        # this keeps register/forgot-password/change-password tests on the
+        # graceful no-op path in email_service instead of a real (failing)
+        # SMTP connection attempt. Tests that need the raw reset token
+        # monkeypatch app.services.email_service.send_password_reset_email
+        # directly rather than relying on this being unset.
+        SMTP_HOST = ""
         SQLALCHEMY_DATABASE_URI = postgres_container.get_connection_url()
         REDIS_URL = (
             f"redis://{redis_container.get_container_host_ip()}:"

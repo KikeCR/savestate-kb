@@ -64,4 +64,13 @@ describe('Login', () => {
 
 		resolveLogin(mockUser)
 	})
+
+	it('links to the forgot-password page', async () => {
+		mockAuthMe(mockedApi, null)
+		const login = new LoginPageObject()
+
+		expect(login.forgotPasswordLink.getAttribute('href')).toBe(
+			'/forgot-password',
+		)
+	})
 })

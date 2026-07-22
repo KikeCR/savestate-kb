@@ -33,6 +33,7 @@ const emptyActivity = { results: [] as ActivityEvent[] }
 beforeEach(() => {
 	mockedApi.get.mockReset()
 	mockedApi.patch.mockReset()
+	mockedApi.post.mockReset()
 })
 
 describe('Dashboard', () => {
@@ -183,5 +184,86 @@ describe('Dashboard', () => {
 		expect(mockedApi.patch).toHaveBeenCalledWith('/api/auth/me', {
 			avatar_url: null,
 		})
+	})
+
+	it('updates the password, shows a toast, and clears the fields', async () => {
+		mockGetRoutes(mockedApi, {
+			...authMeRoute(mockUser),
+			[summaryPath]: baseSummary,
+			[activityPath]: emptyActivity,
+		})
+		mockedApi.post.mockResolvedValueOnce(mockUser)
+		const dashboard = new DashboardPageObject()
+		await waitFor(() =>
+			expect(dashboard.statTileValues.length).toBeGreaterThan(0),
+		)
+
+		await dashboard.changePassword('OldPass123!', 'NewPass123!', 'NewPass123!')
+
+		expect(mockedApi.post).toHaveBeenCalledWith('/api/auth/change-password', {
+			current_password: 'OldPass123!',
+			new_password: 'NewPass123!',
+		})
+		await waitFor(() =>
+			expect(dashboard.toastText).toContain('Password updated'),
+		)
+		expect(dashboard.currentPasswordInput.value).toBe('')
+		expect(dashboard.newPasswordInput.value).toBe('')
+		expect(dashboard.confirmNewPasswordInput.value).toBe('')
+	})
+
+	it('shows an error and does not call the API when the new passwords do not match', async () => {
+		mockGetRoutes(mockedApi, {
+			...authMeRoute(mockUser),
+			[summaryPath]: baseSummary,
+			[activityPath]: emptyActivity,
+		})
+		const dashboard = new DashboardPageObject()
+		await waitFor(() =>
+			expect(dashboard.statTileValues.length).toBeGreaterThan(0),
+		)
+
+		await dashboard.changePassword('OldPass123!', 'NewPass123!', 'Mismatch123!')
+
+		expect(dashboard.errorText).toContain('do not match')
+		expect(mockedApi.post).not.toHaveBeenCalled()
+	})
+
+	it('shows an error and does not call the API for a policy-violating new password', async () => {
+		mockGetRoutes(mockedApi, {
+			...authMeRoute(mockUser),
+			[summaryPath]: baseSummary,
+			[activityPath]: emptyActivity,
+		})
+		const dashboard = new DashboardPageObject()
+		await waitFor(() =>
+			expect(dashboard.statTileValues.length).toBeGreaterThan(0),
+		)
+
+		await dashboard.changePassword('OldPass123!', 'weakpass', 'weakpass')
+
+		expect(dashboard.errorText).toContain('password must contain')
+		expect(mockedApi.post).not.toHaveBeenCalled()
+	})
+
+	it('shows the server error when the current password is wrong', async () => {
+		mockGetRoutes(mockedApi, {
+			...authMeRoute(mockUser),
+			[summaryPath]: baseSummary,
+			[activityPath]: emptyActivity,
+		})
+		mockedApi.post.mockRejectedValueOnce(
+			new Error('current password is incorrect'),
+		)
+		const dashboard = new DashboardPageObject()
+		await waitFor(() =>
+			expect(dashboard.statTileValues.length).toBeGreaterThan(0),
+		)
+
+		await dashboard.changePassword('WrongPass1!', 'NewPass123!', 'NewPass123!')
+
+		await waitFor(() =>
+			expect(dashboard.errorText).toContain('current password is incorrect'),
+		)
 	})
 })
