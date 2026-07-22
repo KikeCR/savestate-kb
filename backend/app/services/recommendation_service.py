@@ -238,7 +238,9 @@ def _prepare(user_id, redis_client=None):
     query_text = _compose_taste_query_text(taste_items)
     query_vector = embeddings.embed_text(query_text)
 
-    pool = _retrieve_candidates(query_vector, excluded_game_ids, RECOMMENDATION_CANDIDATE_POOL_LIMIT)
+    pool = _retrieve_candidates(
+        query_vector, excluded_game_ids, RECOMMENDATION_CANDIDATE_POOL_LIMIT
+    )
     if not pool:
         pool = _popularity_fallback(excluded_game_ids, RECOMMENDATION_CANDIDATE_POOL_LIMIT)
 

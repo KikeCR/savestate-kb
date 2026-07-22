@@ -82,9 +82,7 @@ def clear_feedback(game_id):
 @recommendations_bp.route("/topup", methods=["POST"])
 @login_required
 def topup_recommendations():
-    seconds_remaining = recommendation_service.get_topup_cooldown_seconds_remaining(
-        current_user.id
-    )
+    seconds_remaining = recommendation_service.get_topup_cooldown_seconds_remaining(current_user.id)
     if seconds_remaining > 0:
         return jsonify(
             {

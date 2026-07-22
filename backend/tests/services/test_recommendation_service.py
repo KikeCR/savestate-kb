@@ -317,7 +317,9 @@ def test_recently_shown_window_expires(app, make_user, make_game, make_entry, mo
             datetime.now(timezone.utc)
             - timedelta(seconds=RECOMMENDATION_RECENTLY_SHOWN_WINDOW_SECONDS + 60)
         ).timestamp()
-        redis_client.zadd(recommendation_service._seen_key(user.id), {str(game.id): stale_timestamp})
+        redis_client.zadd(
+            recommendation_service._seen_key(user.id), {str(game.id): stale_timestamp}
+        )
 
         recently_shown = recommendation_service._recently_shown_game_ids(user.id, redis_client)
 

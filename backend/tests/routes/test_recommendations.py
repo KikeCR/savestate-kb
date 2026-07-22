@@ -148,9 +148,7 @@ def test_clear_feedback_is_a_no_op_when_no_row_exists(logged_in_client, make_gam
     assert response.status_code == 204
 
 
-def test_clear_feedback_removes_row_and_invalidates_cache(
-    logged_in_client, make_game, monkeypatch
-):
+def test_clear_feedback_removes_row_and_invalidates_cache(logged_in_client, make_game, monkeypatch):
     from app.services import recommendation_service
 
     invalidated = {"called": False}
