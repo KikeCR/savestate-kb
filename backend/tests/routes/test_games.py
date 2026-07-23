@@ -3,6 +3,7 @@ import json
 import pytest
 import requests
 
+from app.constants import REVIEW_DISPLAY_LIMIT
 from app.services.rawg_client import RAWG_SEARCH_KEY_PREFIX
 
 pytestmark = pytest.mark.integration
@@ -244,3 +245,52 @@ def test_game_detail_shows_no_ratings_when_none_exist(client, make_game, mock_ra
     body = response.get_json()
     assert body["local_average_rating"] is None
     assert body["local_ratings_count"] == 0
+
+
+def test_game_reviews_returns_404_for_unknown_game(client):
+    response = client.get("/api/games/999999/reviews")
+
+    assert response.status_code == 404
+
+
+def test_game_reviews_returns_empty_results_when_none_exist(client, make_game):
+    game = make_game()
+
+    response = client.get(f"/api/games/{game.id}/reviews")
+
+    assert response.status_code == 200
+    assert response.get_json()["results"] == []
+
+
+def test_game_reviews_returns_only_reviews_for_that_game(client, make_user, make_game, make_review):
+    game_a = make_game()
+    game_b = make_game()
+    make_review(make_user(), game_a, body="Review for A")
+    make_review(make_user(), game_b, body="Review for B")
+
+    response = client.get(f"/api/games/{game_a.id}/reviews")
+
+    bodies = [r["body"] for r in response.get_json()["results"]]
+    assert bodies == ["Review for A"]
+
+
+def test_game_reviews_excludes_reviews_from_private_profile_users(
+    client, make_user, make_game, make_review
+):
+    game = make_game()
+    private_user = make_user(profile_visibility="private")
+    make_review(private_user, game, body="Should be hidden")
+
+    response = client.get(f"/api/games/{game.id}/reviews")
+
+    assert response.get_json()["results"] == []
+
+
+def test_game_reviews_respects_display_limit(client, make_user, make_game, make_review):
+    game = make_game()
+    for _ in range(REVIEW_DISPLAY_LIMIT + 3):
+        make_review(make_user(), game)
+
+    response = client.get(f"/api/games/{game.id}/reviews")
+
+    assert len(response.get_json()["results"]) == REVIEW_DISPLAY_LIMIT

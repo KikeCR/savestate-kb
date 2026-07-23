@@ -1,11 +1,12 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Library } from '../../pages/Library'
+import { STATUS_LABELS, type EntryStatus } from '../../types'
 import { renderWithProviders } from '../render'
 
 export class LibraryPageObject {
-	// Radix sets `pointer-events: none` on <body> while the YearSelect popover
-	// is open, which would otherwise block userEvent's default click check.
+	// Radix sets `pointer-events: none` on <body> while a Select popover is
+	// open, which would otherwise block userEvent's default click check.
 	private user = userEvent.setup({ pointerEventsCheck: 0 })
 	private container: HTMLElement
 
@@ -68,14 +69,6 @@ export class LibraryPageObject {
 		if (this.toastActionButton) await this.user.click(this.toastActionButton)
 	}
 
-	private statusSelectAt(i: number): HTMLSelectElement {
-		return this.entryRows[i]?.querySelectorAll('select')[0] as HTMLSelectElement
-	}
-
-	private ratingSelectAt(i: number): HTMLSelectElement {
-		return this.entryRows[i]?.querySelectorAll('select')[1] as HTMLSelectElement
-	}
-
 	private yearInputAt(i: number): HTMLInputElement {
 		return this.entryRows[i]?.querySelector(
 			'input[type="number"]',
@@ -83,15 +76,35 @@ export class LibraryPageObject {
 	}
 
 	private deleteButtonAt(i: number): HTMLButtonElement {
-		return this.entryRows[i]?.querySelector('button') as HTMLButtonElement
+		return this.entryRows[i]?.querySelector(
+			'.entry-list__remove',
+		) as HTMLButtonElement
 	}
 
 	async changeStatus(i: number, status: string) {
-		await this.user.selectOptions(this.statusSelectAt(i), status)
+		const trigger = within(this.entryRows[i] as HTMLElement).getByRole(
+			'combobox',
+			{ name: 'Status' },
+		)
+		await this.user.click(trigger)
+		await this.user.click(
+			await screen.findByRole('option', {
+				name: STATUS_LABELS[status as EntryStatus],
+			}),
+		)
 	}
 
 	async changeRating(i: number, rating: string) {
-		await this.user.selectOptions(this.ratingSelectAt(i), rating)
+		const trigger = within(this.entryRows[i] as HTMLElement).getByRole(
+			'combobox',
+			{ name: 'Rating' },
+		)
+		await this.user.click(trigger)
+		await this.user.click(
+			await screen.findByRole('option', {
+				name: rating === '' ? 'Unrated' : `${rating}/10`,
+			}),
+		)
 	}
 
 	async changeYear(i: number, year: string) {

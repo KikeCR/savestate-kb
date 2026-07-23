@@ -42,4 +42,10 @@ describe('renderActivityMessage', () => {
 			renderMessage({ ...baseEvent, action: 'logged_year', year_played: 2023 }),
 		).toBe('jane logged Celeste as played in 2023')
 	})
+
+	it('renders the reviewed message', () => {
+		expect(renderMessage({ ...baseEvent, action: 'reviewed' })).toBe(
+			'jane reviewed Celeste',
+		)
+	})
 })

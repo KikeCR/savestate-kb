@@ -108,6 +108,19 @@ def test_list_entries_scoped_to_current_user(logged_in_client, make_user, make_g
     assert response.get_json()["results"] == []
 
 
+def test_list_entries_filters_by_game_id(logged_in_client, make_game):
+    game_a = make_game()
+    game_b = make_game()
+    logged_in_client.post("/api/entries", json={"game_id": game_a.id})
+    logged_in_client.post("/api/entries", json={"game_id": game_b.id})
+
+    response = logged_in_client.get("/api/entries", query_string={"game_id": game_a.id})
+
+    results = response.get_json()["results"]
+    assert len(results) == 1
+    assert results[0]["game"]["id"] == game_a.id
+
+
 def test_get_entry_not_found_for_other_users_entry(logged_in_client, make_user, make_game):
     game = make_game()
     created = logged_in_client.post("/api/entries", json={"game_id": game.id}).get_json()

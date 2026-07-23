@@ -3,6 +3,7 @@ from app.models.follow import Follow
 from app.models.game import Game
 from app.models.game_feedback import GameFeedback
 from app.models.password_reset_token import PasswordResetToken
+from app.models.review import Review
 from app.models.user import User
 from app.models.user_game_entry import UserGameEntry
 
@@ -12,6 +13,7 @@ __all__ = [
     "Game",
     "GameFeedback",
     "PasswordResetToken",
+    "Review",
     "User",
     "UserGameEntry",
 ]

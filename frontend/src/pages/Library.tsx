@@ -1,18 +1,36 @@
 import { Plus, Search, Trash2 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../api/client'
+import { Select } from '../components/Select'
 import { YearSelect } from '../components/YearSelect'
 import { useToast } from '../context/ToastContext'
 import { useAvailableYears } from '../hooks/useAvailableYears'
 import './Library.css'
 import {
 	ENTRY_STATUSES,
+	STATUS_LABELS,
 	type Entry,
 	type EntryStatus,
 	type Game,
 } from '../types'
 
 const RATING_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1)
+
+const STATUS_SELECT_OPTIONS = ENTRY_STATUSES.map((status) => ({
+	value: status,
+	label: STATUS_LABELS[status],
+}))
+
+const UNRATED = 'unrated'
+
+const RATING_SELECT_OPTIONS = [
+	{ value: UNRATED, label: 'Unrated' },
+	...RATING_OPTIONS.map((rating) => ({
+		value: String(rating),
+		label: `${rating}/10`,
+	})),
+]
 
 // Matches the .entry-list li exit transition duration in Library.css — the
 // row is kept rendered (with a "removing" class) for this long so it can
@@ -223,7 +241,7 @@ export const Library = () => {
 							key={entry.id}
 							className={removingIds.has(entry.id) ? 'removing' : undefined}
 						>
-							<div className="entry-list__info">
+							<Link to={`/games/${entry.game.id}`} className="entry-list__info">
 								{entry.game.cover_image_url && (
 									<img
 										src={entry.game.cover_image_url}
@@ -232,32 +250,26 @@ export const Library = () => {
 									/>
 								)}
 								<span>{entry.game.title}</span>
-							</div>
+							</Link>
 							<div className="entry-list__controls">
-								<select
+								<Select
 									value={entry.status}
-									onChange={(e) =>
-										handleStatusChange(entry, e.target.value as EntryStatus)
+									onValueChange={(value) =>
+										handleStatusChange(entry, value as EntryStatus)
 									}
-								>
-									{ENTRY_STATUSES.map((status) => (
-										<option key={status} value={status}>
-											{status}
-										</option>
-									))}
-								</select>
-								<select
-									value={entry.rating ?? ''}
-									onChange={(e) => handleRatingChange(entry, e.target.value)}
-									aria-label="Rating"
-								>
-									<option value="">Unrated</option>
-									{RATING_OPTIONS.map((rating) => (
-										<option key={rating} value={rating}>
-											{rating}/10
-										</option>
-									))}
-								</select>
+									options={STATUS_SELECT_OPTIONS}
+									ariaLabel="Status"
+									triggerClassName="entry-list__status-select"
+								/>
+								<Select
+									value={entry.rating != null ? String(entry.rating) : UNRATED}
+									onValueChange={(value) =>
+										handleRatingChange(entry, value === UNRATED ? '' : value)
+									}
+									options={RATING_SELECT_OPTIONS}
+									ariaLabel="Rating"
+									triggerClassName="entry-list__rating-select"
+								/>
 								<input
 									type="number"
 									className="entry-list__year-input"
@@ -268,8 +280,13 @@ export const Library = () => {
 									defaultValue={entry.year_played ?? ''}
 									onBlur={(e) => handleYearPlayedChange(entry, e.target.value)}
 								/>
-								<button onClick={() => handleDelete(entry)}>
-									<Trash2 size={14} /> Remove
+								<button
+									type="button"
+									className="entry-list__remove"
+									onClick={() => handleDelete(entry)}
+									aria-label={`Remove ${entry.game.title} from library`}
+								>
+									<Trash2 size={14} />
 								</button>
 							</div>
 						</li>

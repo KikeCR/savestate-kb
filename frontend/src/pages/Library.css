@@ -69,6 +69,11 @@
 	min-width: 0;
 }
 
+.entry-list__info {
+	color: inherit;
+	text-decoration: none;
+}
+
 .search-results__info span,
 .entry-list__info span {
 	flex: 1;
@@ -82,14 +87,45 @@
 
 .search-results img,
 .entry-list img {
+	width: 40px;
+	height: 40px;
+	flex-shrink: 0;
 	border-radius: var(--radius-sm);
 	object-fit: cover;
 }
 
+.entry-list__status-select {
+	min-width: 130px;
+}
+
+.entry-list__rating-select {
+	min-width: 100px;
+}
+
 .entry-list__year-input {
 	width: 90px;
-	padding: 0.3rem;
+	padding: 0.35rem 0.6rem;
 	font-size: var(--font-size-sm);
+	border-radius: var(--radius-sm);
+}
+
+.entry-list__remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.75rem;
+	height: 1.75rem;
+	padding: 0;
+	flex-shrink: 0;
+	border: none;
+	background: transparent;
+	color: var(--color-text-muted);
+	border-radius: 999px;
+}
+
+.entry-list__remove:hover {
+	background: var(--color-surface-alt);
+	color: #dc2626;
 }
 
 @media (max-width: 640px) {

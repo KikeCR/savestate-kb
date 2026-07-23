@@ -4,6 +4,7 @@ from app.constants import DEFAULT_ENTRY_STATUS, DEFAULT_PROFILE_VISIBILITY, FEED
 from app.models.follow import Follow
 from app.models.game import Game
 from app.models.game_feedback import GameFeedback
+from app.models.review import Review
 from app.models.user import User
 from app.models.user_game_entry import UserGameEntry
 
@@ -66,3 +67,13 @@ def build_game_feedback(user, game, **overrides):
     }
     defaults.update(overrides)
     return GameFeedback(**defaults)
+
+
+def build_review(user, game, **overrides):
+    defaults = {
+        "user_id": user.id,
+        "game_id": game.id,
+        "body": "Great game.",
+    }
+    defaults.update(overrides)
+    return Review(**defaults)

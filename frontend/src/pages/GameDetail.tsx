@@ -1,16 +1,69 @@
-import { Loader2, Plus, Star } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Check, Loader2, Plus, Star } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
+import { ReviewCard } from '../components/ReviewCard'
+import { ReviewForm } from '../components/ReviewForm'
 import { useAuth } from '../context/AuthContext'
 import { useAddToLibrary } from '../hooks/useAddToLibrary'
-import type { GameDetail as GameDetailResponse } from '../types'
+import type { Entry, GameDetail as GameDetailResponse, Review } from '../types'
 import { parseGameDescription } from '../utils/gameDescription'
 import './GameDetail.css'
 
 const GameDetailContent = ({ game }: { game: GameDetailResponse }) => {
 	const { user } = useAuth()
-	const { adding, added, handleAdd } = useAddToLibrary(game)
+	const [myEntry, setMyEntry] = useState<Entry | null>(null)
+	const [existingReview, setExistingReview] = useState<Review | null>(null)
+	const [reviews, setReviews] = useState<Review[]>([])
+
+	const refetchMyEntry = useCallback(() => {
+		if (!user) {
+			setMyEntry(null)
+			return
+		}
+		api
+			.get<{ results: Entry[] }>(`/api/entries?game_id=${game.id}`)
+			.then((data) => setMyEntry(data.results[0] ?? null))
+			.catch(() => setMyEntry(null))
+	}, [game.id, user])
+
+	const { adding, handleAdd } = useAddToLibrary(game, refetchMyEntry)
+
+	const refetchReviews = useCallback(() => {
+		api
+			.get<{ results: Review[] }>(`/api/games/${game.id}/reviews`)
+			.then((data) => setReviews(data.results))
+			.catch(() => setReviews([]))
+	}, [game.id])
+
+	useEffect(() => {
+		refetchReviews()
+	}, [refetchReviews])
+
+	useEffect(() => {
+		refetchMyEntry()
+		if (!user) {
+			setExistingReview(null)
+			return
+		}
+		api
+			.get<Review>(`/api/reviews/${game.id}`)
+			.then(setExistingReview)
+			.catch(() => setExistingReview(null))
+	}, [game.id, user, refetchMyEntry])
+
+	const inLibrary = myEntry !== null
+	const canReview = myEntry?.status === 'completed' && myEntry?.rating != null
+
+	const handleReviewSaved = (review: Review) => {
+		setExistingReview(review)
+		refetchReviews()
+	}
+
+	const handleReviewDeleted = () => {
+		setExistingReview(null)
+		refetchReviews()
+	}
 
 	return (
 		<div className="game-detail">
@@ -89,19 +142,34 @@ const GameDetailContent = ({ game }: { game: GameDetailResponse }) => {
 					</dl>
 
 					{user ? (
-						<button
-							type="button"
-							className="game-detail__add"
-							onClick={handleAdd}
-							disabled={adding || added}
-						>
-							<Plus size={14} />{' '}
-							{added ? 'Added' : adding ? 'Adding...' : 'Add to Library'}
-						</button>
+						inLibrary ? (
+							<span className="game-detail__add game-detail__add--owned">
+								<Check size={14} /> In Library
+							</span>
+						) : (
+							<button
+								type="button"
+								className="game-detail__add"
+								onClick={handleAdd}
+								disabled={adding}
+							>
+								<Plus size={14} /> {adding ? 'Adding...' : 'Add to Library'}
+							</button>
+						)
 					) : (
 						<a href="/login" className="game-detail__add">
 							<Plus size={14} /> Log in to add
 						</a>
+					)}
+
+					{user && (canReview || existingReview) && (
+						<ReviewForm
+							gameId={game.id}
+							myEntry={myEntry}
+							existingReview={existingReview}
+							onSaved={handleReviewSaved}
+							onDeleted={handleReviewDeleted}
+						/>
 					)}
 				</div>
 			</div>
@@ -115,6 +183,17 @@ const GameDetailContent = ({ game }: { game: GameDetailResponse }) => {
 								{block.heading && <h3>{block.heading}</h3>}
 								{block.body && <p>{block.body}</p>}
 							</div>
+						))}
+					</div>
+				</section>
+			)}
+
+			{reviews.length > 0 && (
+				<section className="game-detail__reviews">
+					<h2>Reviews</h2>
+					<div className="review-grid">
+						{reviews.map((review) => (
+							<ReviewCard key={review.id} review={review} />
 						))}
 					</div>
 				</section>

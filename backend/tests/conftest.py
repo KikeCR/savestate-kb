@@ -16,7 +16,14 @@ from app import create_app
 from app.config import Config
 from app.extensions import db
 from app.services.rawg_client import RAWG_BASE_URL
-from tests.factories import build_entry, build_follow, build_game, build_game_feedback, build_user
+from tests.factories import (
+    build_entry,
+    build_follow,
+    build_game,
+    build_game_feedback,
+    build_review,
+    build_user,
+)
 
 
 @pytest.fixture(scope="session")
@@ -160,6 +167,20 @@ def make_game_feedback(app):
             db.session.refresh(feedback)
             db.session.expunge(feedback)
             return feedback
+
+    return _make
+
+
+@pytest.fixture()
+def make_review(app):
+    def _make(user, game, **overrides):
+        with app.app_context():
+            review = build_review(user, game, **overrides)
+            db.session.add(review)
+            db.session.commit()
+            db.session.refresh(review)
+            db.session.expunge(review)
+            return review
 
     return _make
 
