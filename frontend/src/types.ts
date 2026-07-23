@@ -4,8 +4,26 @@ export interface User {
 	username: string
 	profile_visibility: 'public' | 'private'
 	avatar_url: string | null
+	preferred_platforms: string[]
 	created_at: string
 }
+
+// Must match backend PLATFORMS (backend/app/constants.py) — there's no
+// shared-constants mechanism across the frontend/backend boundary anywhere
+// in this codebase, so this is intentionally hardcoded and cross-referenced
+// by comment (same caveat as VISIBLE_RECOMMENDATION_COUNT below).
+export const PLATFORMS = [
+	'PC',
+	'PlayStation 5',
+	'PlayStation 4',
+	'Xbox Series S/X',
+	'Xbox One',
+	'Nintendo Switch',
+	'macOS',
+	'Linux',
+	'iOS',
+	'Android',
+]
 
 export type EntryStatus =
 	'backlog' | 'playing' | 'completed' | 'dropped' | 'replaying'
@@ -37,6 +55,16 @@ export interface Game {
 	metacritic?: number | null
 	rawg_rating?: number | null
 	tags?: string[]
+	description?: string | null
+	esrb_rating?: string | null
+	developers?: string[]
+	publishers?: string[]
+	website?: string | null
+}
+
+export interface GameDetail extends Game {
+	local_average_rating: number | null
+	local_ratings_count: number
 }
 
 export interface Entry {
@@ -62,6 +90,7 @@ export interface PublicUser {
 	username: string
 	profile_visibility: 'public' | 'private'
 	avatar_url: string | null
+	preferred_platforms: string[]
 	created_at: string
 }
 

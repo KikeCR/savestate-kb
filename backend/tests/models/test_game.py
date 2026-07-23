@@ -34,6 +34,11 @@ def test_to_dict_serializes_all_fields():
         "metacritic": 92,
         "rawg_rating": 4.4,
         "tags": ["Difficult", "Great Soundtrack"],
+        "description": None,
+        "esrb_rating": None,
+        "developers": [],
+        "publishers": [],
+        "website": None,
     }
 
 
@@ -47,6 +52,36 @@ def test_to_dict_handles_missing_release_date_and_lists():
     assert data["platforms"] == []
     assert data["genres"] == []
     assert data["tags"] == []
+
+
+def test_to_dict_includes_detail_metadata_when_set():
+    game = build_game(
+        description="A great game.",
+        esrb_rating="Teen",
+        developers=["Studio A"],
+        publishers=["Publisher A"],
+        website="https://example.com",
+    )
+    game.id = 1
+
+    data = game.to_dict()
+
+    assert data["description"] == "A great game."
+    assert data["esrb_rating"] == "Teen"
+    assert data["developers"] == ["Studio A"]
+    assert data["publishers"] == ["Publisher A"]
+    assert data["website"] == "https://example.com"
+
+
+def test_to_dict_excludes_detail_fetched_at():
+    from datetime import datetime, timezone
+
+    game = build_game(detail_fetched_at=datetime.now(timezone.utc))
+    game.id = 1
+
+    data = game.to_dict()
+
+    assert "detail_fetched_at" not in data
 
 
 def test_to_dict_excludes_embedding_fields():

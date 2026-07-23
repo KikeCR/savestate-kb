@@ -1,5 +1,6 @@
 import { Plus, Star, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useState, type CSSProperties } from 'react'
+import { Link } from 'react-router-dom'
 import { api } from '../../api/client'
 import { useToast } from '../../context/ToastContext'
 import { useAddToLibrary } from '../../hooks/useAddToLibrary'
@@ -88,7 +89,7 @@ export const RecommendationCard = ({
 			style={{ '--stagger-index': index } as CSSProperties}
 			onAnimationEnd={() => setEntering(false)}
 		>
-			<div className="recommendation-card__cover">
+			<Link to={`/games/${game.id}`} className="recommendation-card__cover">
 				{game.cover_image_url ? (
 					<img src={game.cover_image_url} alt={game.title} />
 				) : (
@@ -97,7 +98,7 @@ export const RecommendationCard = ({
 						aria-hidden="true"
 					/>
 				)}
-			</div>
+			</Link>
 			<div className="recommendation-card__body">
 				<Tooltip label={game.title}>
 					<p className="recommendation-card__title">{game.title}</p>

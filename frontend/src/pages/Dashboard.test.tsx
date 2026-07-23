@@ -186,6 +186,69 @@ describe('Dashboard', () => {
 		})
 	})
 
+	it('adds a platform to preferred_platforms when its checkbox is toggled on', async () => {
+		mockGetRoutes(mockedApi, {
+			...authMeRoute(mockUser),
+			[summaryPath]: baseSummary,
+			[activityPath]: emptyActivity,
+		})
+		mockedApi.patch.mockResolvedValueOnce({
+			...mockUser,
+			preferred_platforms: ['PC'],
+		})
+		const dashboard = new DashboardPageObject()
+		await waitFor(() =>
+			expect(dashboard.statTileValues.length).toBeGreaterThan(0),
+		)
+
+		await dashboard.openPreferencesTab()
+		await dashboard.togglePlatform('PC')
+
+		expect(mockedApi.patch).toHaveBeenCalledWith('/api/auth/me', {
+			preferred_platforms: ['PC'],
+		})
+	})
+
+	it('removes a platform from preferred_platforms when its checkbox is toggled off', async () => {
+		mockGetRoutes(mockedApi, {
+			...authMeRoute({ ...mockUser, preferred_platforms: ['PC', 'Xbox One'] }),
+			[summaryPath]: baseSummary,
+			[activityPath]: emptyActivity,
+		})
+		mockedApi.patch.mockResolvedValueOnce({
+			...mockUser,
+			preferred_platforms: ['Xbox One'],
+		})
+		const dashboard = new DashboardPageObject()
+		await waitFor(() =>
+			expect(dashboard.statTileValues.length).toBeGreaterThan(0),
+		)
+
+		await dashboard.openPreferencesTab()
+		await dashboard.togglePlatform('PC')
+
+		expect(mockedApi.patch).toHaveBeenCalledWith('/api/auth/me', {
+			preferred_platforms: ['Xbox One'],
+		})
+	})
+
+	it('pre-checks checkboxes for the user’s existing preferred platforms', async () => {
+		mockGetRoutes(mockedApi, {
+			...authMeRoute({ ...mockUser, preferred_platforms: ['Nintendo Switch'] }),
+			[summaryPath]: baseSummary,
+			[activityPath]: emptyActivity,
+		})
+		const dashboard = new DashboardPageObject()
+		await waitFor(() =>
+			expect(dashboard.statTileValues.length).toBeGreaterThan(0),
+		)
+
+		await dashboard.openPreferencesTab()
+
+		expect(dashboard.platformCheckbox('Nintendo Switch').checked).toBe(true)
+		expect(dashboard.platformCheckbox('PC').checked).toBe(false)
+	})
+
 	it('updates the password, shows a toast, and clears the fields', async () => {
 		mockGetRoutes(mockedApi, {
 			...authMeRoute(mockUser),

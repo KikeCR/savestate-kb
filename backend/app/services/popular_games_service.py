@@ -57,6 +57,20 @@ def get_critically_acclaimed_games(exclude_game_ids=None, limit=HOME_POPULAR_RES
     )
 
 
+def get_local_rating_stats(game_id):
+    """Savestate's own users' average rating for a game (distinct from
+    Game.rawg_rating, which is RAWG's cross-site aggregate) — the game
+    detail page's "average users review". Unrated library entries
+    (rating is None) are excluded from both the average and the count.
+    """
+    avg_rating, ratings_count = (
+        db.session.query(func.avg(UserGameEntry.rating), func.count(UserGameEntry.rating))
+        .filter(UserGameEntry.game_id == game_id, UserGameEntry.rating.isnot(None))
+        .one()
+    )
+    return (round(float(avg_rating), 1) if avg_rating is not None else None, ratings_count)
+
+
 def get_popular_games(exclude_game_ids=None, limit=HOME_POPULAR_RESULT_LIMIT):
     """The homepage's blended popularity view: community picks (if there's
     enough cross-user signal to be meaningful) plus critically-acclaimed

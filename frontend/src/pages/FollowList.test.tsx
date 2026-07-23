@@ -19,6 +19,7 @@ const makePublicUser = (overrides: Partial<PublicUser> = {}): PublicUser => ({
 	username: 'other',
 	profile_visibility: 'public',
 	avatar_url: null,
+	preferred_platforms: [],
 	created_at: '2024-01-01T00:00:00.000Z',
 	...overrides,
 })

@@ -47,6 +47,26 @@ def test_to_public_dict_includes_avatar_url_when_set():
     assert data["avatar_url"] == "https://example.com/avatar.png"
 
 
+def test_to_public_dict_defaults_preferred_platforms_to_empty_list():
+    user = build_user()
+    user.id = 1
+    user.created_at = datetime.now(timezone.utc)
+
+    data = user.to_public_dict()
+
+    assert data["preferred_platforms"] == []
+
+
+def test_to_public_dict_includes_preferred_platforms_when_set():
+    user = build_user(preferred_platforms=["PC", "Nintendo Switch"])
+    user.id = 1
+    user.created_at = datetime.now(timezone.utc)
+
+    data = user.to_public_dict()
+
+    assert data["preferred_platforms"] == ["PC", "Nintendo Switch"]
+
+
 def test_to_private_dict_includes_email():
     user = build_user(email="hidden@example.com", username="visible")
     user.id = 1

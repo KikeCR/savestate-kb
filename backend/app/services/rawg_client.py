@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 from flask import current_app
@@ -34,6 +34,19 @@ class RawgClient:
         resp = requests.get(
             f"{RAWG_BASE_URL}/games",
             params={"key": self.api_key, "search": query, "page": page, "page_size": page_size},
+            timeout=REQUEST_TIMEOUT,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    def get_game_details(self, rawg_id):
+        """Used for the game detail page's first-view fetch — the per-game
+        detail endpoint, distinct from search_games/list_games which only
+        hit the cheaper list endpoint. Callers are expected to persist the
+        result so this is only ever called once per game."""
+        resp = requests.get(
+            f"{RAWG_BASE_URL}/games/{rawg_id}",
+            params={"key": self.api_key},
             timeout=REQUEST_TIMEOUT,
         )
         resp.raise_for_status()
@@ -90,6 +103,28 @@ def normalize_rawg_game(data):
         "rawg_rating": data.get("rating"),
         "rawg_ratings_count": data.get("ratings_count"),
         "tags": tags,
+    }
+
+
+def normalize_rawg_game_detail(data):
+    """Normalizes a per-game detail-endpoint payload (from get_game_details)
+    into the fields the game detail page needs beyond what
+    normalize_rawg_game already covers — description, ESRB rating,
+    developers/publishers, and website. Kept separate from
+    normalize_rawg_game since the two endpoints have different payload
+    shapes and different persistence lifecycles (list fields refresh on
+    every search/sync; these are fetched once and never re-synced).
+    """
+    esrb_rating = data.get("esrb_rating")
+    developers = sorted({dev["name"] for dev in (data.get("developers") or []) if dev.get("name")})
+    publishers = sorted({pub["name"] for pub in (data.get("publishers") or []) if pub.get("name")})
+    return {
+        "description": data.get("description_raw") or None,
+        "esrb_rating": esrb_rating["name"] if esrb_rating else None,
+        "developers": developers,
+        "publishers": publishers,
+        "website": data.get("website") or None,
+        "detail_fetched_at": datetime.now(timezone.utc),
     }
 
 

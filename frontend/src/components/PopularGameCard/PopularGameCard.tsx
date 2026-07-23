@@ -22,7 +22,7 @@ export const PopularGameCard = ({
 
 	return (
 		<div className="popular-game-card">
-			<div className="popular-game-card__cover">
+			<Link to={`/games/${game.id}`} className="popular-game-card__cover">
 				{game.cover_image_url ? (
 					<img src={game.cover_image_url} alt={game.title} />
 				) : (
@@ -31,7 +31,7 @@ export const PopularGameCard = ({
 						aria-hidden="true"
 					/>
 				)}
-			</div>
+			</Link>
 			<div className="popular-game-card__body">
 				<Tooltip label={game.title}>
 					<p className="popular-game-card__title">{game.title}</p>

@@ -7,6 +7,23 @@ VISIBILITY_PUBLIC = "public"
 VISIBILITY_PRIVATE = "private"
 DEFAULT_PROFILE_VISIBILITY = VISIBILITY_PUBLIC
 
+# Curated platform names a user can pick as "preferred platforms" — a subset
+# of the freeform strings RAWG returns in Game.platforms (that field has no
+# fixed vocabulary). Keep these spelled exactly as RAWG returns them, since
+# the recommendation platform-boost matches by exact string intersection.
+PLATFORMS = [
+    "PC",
+    "PlayStation 5",
+    "PlayStation 4",
+    "Xbox Series S/X",
+    "Xbox One",
+    "Nintendo Switch",
+    "macOS",
+    "Linux",
+    "iOS",
+    "Android",
+]
+
 RATING_MIN = 1
 RATING_MAX = 10
 MIN_YEAR_PLAYED = 1970
@@ -60,6 +77,15 @@ RECOMMENDATION_CANDIDATE_POOL_LIMIT = 60
 # biased toward closer taste matches while still varying which subset of the
 # pool is chosen across refreshes.
 RECOMMENDATION_VARIETY_DECAY = 0.9
+
+# Secondary weight multiplier applied in _select_diverse_candidates to a
+# candidate whose platforms overlap the user's preferred_platforms — layered
+# on top of _platform_tier_order's retrieval-stage prioritization
+# (recommendation_service.py), which does the primary work of surfacing
+# matches at all. This just biases which matches vs. non-matches win the
+# variety-sampling step within an already platform-front-loaded pool. Never
+# a hard filter — a great match on a different platform can still be picked.
+RECOMMENDATION_PLATFORM_BOOST_MULTIPLIER = 4.0
 
 # Games shown to a user in the last N seconds are de-prioritized (not
 # hard-excluded — see _select_diverse_candidates) from future candidate

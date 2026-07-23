@@ -81,6 +81,22 @@ export class DashboardPageObject {
 		await this.user.click(this.clearButton)
 	}
 
+	get preferencesTab() {
+		return screen.getByRole('tab', { name: 'Preferences' })
+	}
+
+	async openPreferencesTab() {
+		await this.user.click(this.preferencesTab)
+	}
+
+	platformCheckbox(platform: string) {
+		return screen.getByRole('checkbox', { name: platform }) as HTMLInputElement
+	}
+
+	async togglePlatform(platform: string) {
+		await this.user.click(this.platformCheckbox(platform))
+	}
+
 	get changePasswordTab() {
 		return screen.getByRole('tab', { name: 'Change Password' })
 	}

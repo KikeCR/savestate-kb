@@ -10,6 +10,7 @@ import { Board } from './pages/Board'
 import { Dashboard } from './pages/Dashboard'
 import { FollowersList, FollowingList } from './pages/FollowList'
 import { ForgotPassword } from './pages/ForgotPassword'
+import { GameDetail } from './pages/GameDetail'
 import { Home } from './pages/Home'
 import { Leaderboards } from './pages/Leaderboards'
 import { Library } from './pages/Library'
@@ -43,6 +44,7 @@ export const App = () => {
 						path="/profile/:username/following"
 						element={<FollowingList />}
 					/>
+					<Route path="/games/:id" element={<GameDetail />} />
 					<Route
 						path="/dashboard"
 						element={

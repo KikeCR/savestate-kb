@@ -1,6 +1,7 @@
 import type {
 	Entry,
 	Game,
+	GameDetail,
 	Recommendation,
 	RecommendationsResponse,
 } from '../types'
@@ -13,6 +14,15 @@ export const makeGame = (overrides: Partial<Game> = {}): Game => ({
 	platforms: ['PC'],
 	genres: ['Platformer'],
 	release_date: '2018-01-25',
+	...overrides,
+})
+
+export const makeGameDetail = (
+	overrides: Partial<GameDetail> = {},
+): GameDetail => ({
+	...makeGame(),
+	local_average_rating: null,
+	local_ratings_count: 0,
 	...overrides,
 })
 

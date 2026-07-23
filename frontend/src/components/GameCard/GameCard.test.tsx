@@ -50,6 +50,14 @@ describe('GameCard', () => {
 		).toBe(true)
 	})
 
+	it('links the cover to the game detail page', () => {
+		const card = new GameCardPageObject({
+			entry: makeEntry({ game: { ...makeEntry().game, id: 42 } }),
+		})
+
+		expect(card.coverLinkHref).toBe('/games/42')
+	})
+
 	it('applies the dragging class when dragging is true', () => {
 		expect(
 			new GameCardPageObject({ entry: makeEntry(), dragging: true }).isDragging,

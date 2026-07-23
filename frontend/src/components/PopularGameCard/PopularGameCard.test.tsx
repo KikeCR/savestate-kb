@@ -39,6 +39,13 @@ describe('PopularGameCard', () => {
 		expect(card.genreTexts).toEqual(['Metroidvania', 'Indie'])
 	})
 
+	it('links the cover to the game detail page', async () => {
+		mockAuthMe(mockedApi, mockUser)
+		const card = new PopularGameCardPageObject({ game: makeGame({ id: 42 }) })
+
+		await waitFor(() => expect(card.coverLinkHref).toBe('/games/42'))
+	})
+
 	it('shows an Add to Library button when logged in and adds the game', async () => {
 		mockAuthMe(mockedApi, mockUser)
 		mockedApi.post.mockResolvedValueOnce({ id: 1 })

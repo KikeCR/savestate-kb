@@ -183,3 +183,15 @@ def mock_rawg_search(requests_mock):
             requests_mock.get(url, json={"results": results or []}, status_code=status_code)
 
     return _mock
+
+
+@pytest.fixture()
+def mock_rawg_detail(requests_mock):
+    def _mock(rawg_id, payload=None, status_code=200, exc=None):
+        url = f"{RAWG_BASE_URL}/games/{rawg_id}"
+        if exc:
+            requests_mock.get(url, exc=exc)
+        else:
+            requests_mock.get(url, json=payload or {}, status_code=status_code)
+
+    return _mock

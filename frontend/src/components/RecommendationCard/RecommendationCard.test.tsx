@@ -35,6 +35,14 @@ describe('RecommendationCard', () => {
 		expect(card.reasonText).toBe('Because you loved similar metroidvanias')
 	})
 
+	it('links the cover to the game detail page', () => {
+		const card = new RecommendationCardPageObject({
+			recommendation: makeRecommendation({ game: makeGame({ id: 42 }) }),
+		})
+
+		expect(card.coverLinkHref).toBe('/games/42')
+	})
+
 	it('shows a placeholder when the game has no cover image', () => {
 		const card = new RecommendationCardPageObject({
 			recommendation: makeRecommendation({
