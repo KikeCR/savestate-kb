@@ -4,6 +4,7 @@ import type {
 	GameDetail,
 	Recommendation,
 	RecommendationsResponse,
+	Review,
 } from '../types'
 
 export const makeGame = (overrides: Partial<Game> = {}): Game => ({
@@ -60,6 +61,24 @@ export const makeEntry = (overrides: Partial<Entry> = {}): Entry => ({
 	replay_count: 0,
 	platform_played: null,
 	tags: [],
+	created_at: '2024-01-01T00:00:00.000Z',
+	updated_at: '2024-01-01T00:00:00.000Z',
+	...overrides,
+})
+
+export const makeReview = (overrides: Partial<Review> = {}): Review => ({
+	id: 1,
+	game_id: 1,
+	body: 'A tight, brilliant metroidvania.',
+	rating: 9,
+	author: {
+		id: 2,
+		username: 'sam',
+		profile_visibility: 'public',
+		avatar_url: null,
+		preferred_platforms: [],
+		created_at: '2024-01-01T00:00:00.000Z',
+	},
 	created_at: '2024-01-01T00:00:00.000Z',
 	updated_at: '2024-01-01T00:00:00.000Z',
 	...overrides,

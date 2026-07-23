@@ -99,7 +99,8 @@ export interface LeaderboardEntry {
 	score: number
 }
 
-export type ActivityAction = 'added' | 'completed' | 'rated' | 'logged_year'
+export type ActivityAction =
+	'added' | 'completed' | 'rated' | 'logged_year' | 'reviewed'
 
 export interface ActivityEvent {
 	user_id: number
@@ -183,3 +184,18 @@ export interface PopularGamesResponse {
 	community: Game[]
 	critics: Game[]
 }
+
+export interface Review {
+	id: number
+	game_id: number
+	body: string
+	rating: number | null
+	author: PublicUser
+	created_at: string
+	updated_at: string
+}
+
+// Must match backend REVIEW_DISPLAY_LIMIT (backend/app/constants.py) —
+// informational only; the actual limiting+randomizing happens server-side
+// (GET /api/games/:id/reviews already returns at most this many).
+export const REVIEW_DISPLAY_LIMIT = 6

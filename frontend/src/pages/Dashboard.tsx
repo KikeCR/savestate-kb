@@ -1,5 +1,5 @@
 import * as Tabs from '@radix-ui/react-tabs'
-import { BookMarked, ChevronRight, Clock, Gamepad2, Trophy } from 'lucide-react'
+import { BookMarked, ChevronRight, Gamepad2, Trophy } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
@@ -161,51 +161,6 @@ export const Dashboard = () => {
 						</Link>
 					</p>
 
-					<div className="visibility-toggle">
-						<span>Profile visibility:</span>
-						<label>
-							<input
-								type="radio"
-								name="visibility"
-								checked={user.profile_visibility === 'public'}
-								onChange={() => handleVisibilityChange('public')}
-								disabled={saving}
-							/>
-							Public
-						</label>
-						<label>
-							<input
-								type="radio"
-								name="visibility"
-								checked={user.profile_visibility === 'private'}
-								onChange={() => handleVisibilityChange('private')}
-								disabled={saving}
-							/>
-							Private
-						</label>
-					</div>
-
-					<div className="avatar-edit-row">
-						<Avatar
-							username={user.username}
-							avatarUrl={user.avatar_url}
-							size={48}
-						/>
-						<input
-							type="url"
-							placeholder="https://example.com/avatar.png"
-							value={avatarUrlInput}
-							onChange={(e) => setAvatarUrlInput(e.target.value)}
-							disabled={saving}
-						/>
-						<button type="button" onClick={handleAvatarSave} disabled={saving}>
-							Save
-						</button>
-						<button type="button" onClick={handleAvatarClear} disabled={saving}>
-							Clear
-						</button>
-					</div>
-
 					{summary && (
 						<>
 							<div className="dashboard-stats-grid">
@@ -223,11 +178,6 @@ export const Dashboard = () => {
 									label="Completed This Year"
 									value={summary.completed_this_year}
 									icon={<Trophy size={20} />}
-								/>
-								<StatTile
-									label="Total Hours Played"
-									value={`${Math.round(summary.total_hours_played)} hrs`}
-									icon={<Clock size={20} />}
 								/>
 							</div>
 
@@ -281,6 +231,51 @@ export const Dashboard = () => {
 				</Tabs.Content>
 
 				<Tabs.Content value="preferences" className="dashboard-tabs__content">
+					<div className="visibility-toggle">
+						<span>Profile visibility:</span>
+						<label>
+							<input
+								type="radio"
+								name="visibility"
+								checked={user.profile_visibility === 'public'}
+								onChange={() => handleVisibilityChange('public')}
+								disabled={saving}
+							/>
+							Public
+						</label>
+						<label>
+							<input
+								type="radio"
+								name="visibility"
+								checked={user.profile_visibility === 'private'}
+								onChange={() => handleVisibilityChange('private')}
+								disabled={saving}
+							/>
+							Private
+						</label>
+					</div>
+
+					<div className="avatar-edit-row">
+						<Avatar
+							username={user.username}
+							avatarUrl={user.avatar_url}
+							size={48}
+						/>
+						<input
+							type="url"
+							placeholder="https://example.com/avatar.png"
+							value={avatarUrlInput}
+							onChange={(e) => setAvatarUrlInput(e.target.value)}
+							disabled={saving}
+						/>
+						<button type="button" onClick={handleAvatarSave} disabled={saving}>
+							Save
+						</button>
+						<button type="button" onClick={handleAvatarClear} disabled={saving}>
+							Clear
+						</button>
+					</div>
+
 					<p>
 						Platforms you own or prefer — recommendations lean toward games
 						available on these, without excluding anything else.

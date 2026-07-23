@@ -46,7 +46,7 @@ describe('Dashboard', () => {
 		const dashboard = new DashboardPageObject()
 
 		await waitFor(() =>
-			expect(dashboard.statTileValues).toEqual(['3', '2', '4', '42 hrs']),
+			expect(dashboard.statTileValues).toEqual(['3', '2', '4']),
 		)
 	})
 
@@ -116,6 +116,7 @@ describe('Dashboard', () => {
 		await waitFor(() =>
 			expect(dashboard.statTileValues.length).toBeGreaterThan(0),
 		)
+		await dashboard.openPreferencesTab()
 
 		await dashboard.choosePublic()
 
@@ -136,6 +137,7 @@ describe('Dashboard', () => {
 		await waitFor(() =>
 			expect(dashboard.statTileValues.length).toBeGreaterThan(0),
 		)
+		await dashboard.openPreferencesTab()
 
 		await dashboard.choosePrivate()
 
@@ -158,6 +160,7 @@ describe('Dashboard', () => {
 		await waitFor(() =>
 			expect(dashboard.statTileValues.length).toBeGreaterThan(0),
 		)
+		await dashboard.openPreferencesTab()
 
 		await dashboard.setAvatarUrl('  https://x/a.png  ')
 		await dashboard.clickSave()
@@ -178,6 +181,7 @@ describe('Dashboard', () => {
 		await waitFor(() =>
 			expect(dashboard.statTileValues.length).toBeGreaterThan(0),
 		)
+		await dashboard.openPreferencesTab()
 
 		await dashboard.clickClear()
 

@@ -3,9 +3,13 @@ import json
 import requests
 from flask import Blueprint, jsonify, request
 from flask_login import current_user, login_required
+from sqlalchemy import func
 
+from app.constants import REVIEW_DISPLAY_LIMIT, VISIBILITY_PRIVATE
 from app.extensions import db, limiter, redis_client
 from app.models.game import Game
+from app.models.review import Review
+from app.models.user import User
 from app.models.user_game_entry import UserGameEntry
 from app.services import popular_games_service
 from app.services.rawg_client import (
@@ -123,3 +127,25 @@ def game_detail(game_id):
             "local_ratings_count": ratings_count,
         }
     )
+
+
+@games_bp.route("/<int:game_id>/reviews")
+@limiter.limit("30 per minute")
+def game_reviews(game_id):
+    """A small, randomized subset of this game's reviews — enough for the
+    game detail page's reviews grid without needing pagination or scrolling.
+    Reviews from users with a private profile are excluded, matching how
+    private profiles are already gated elsewhere (see users.py, follows.py).
+    """
+    game = db.session.get(Game, game_id)
+    if not game:
+        return jsonify({"error": "game not found"}), 404
+
+    reviews = (
+        Review.query.join(User, Review.user_id == User.id)
+        .filter(Review.game_id == game_id, User.profile_visibility != VISIBILITY_PRIVATE)
+        .order_by(func.random())
+        .limit(REVIEW_DISPLAY_LIMIT)
+        .all()
+    )
+    return jsonify({"results": [review.to_dict() for review in reviews]})

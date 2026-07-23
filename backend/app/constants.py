@@ -37,7 +37,7 @@ PASSWORD_POLICY_HINT = (
 )
 PASSWORD_RESET_TOKEN_EXPIRY_MINUTES = 60
 
-ACTIVITY_ACTIONS = ["added", "completed", "rated", "logged_year"]
+ACTIVITY_ACTIONS = ["added", "completed", "rated", "logged_year", "reviewed"]
 
 AVATAR_URL_MAX_LENGTH = 500
 DASHBOARD_CURRENTLY_PLAYING_LIMIT = 5
@@ -113,6 +113,14 @@ RECOMMENDATION_TOPUP_MAX_PER_WINDOW = 5
 FEEDBACK_LIKED = "liked"
 FEEDBACK_DISLIKED = "disliked"
 FEEDBACK_SENTIMENTS = [FEEDBACK_LIKED, FEEDBACK_DISLIKED]
+
+# --- Reviews ---
+# How many reviews the game detail page shows at once — enough for a small
+# grid with no scrolling. The specific subset shown is randomized
+# server-side (ORDER BY random()) on each request rather than always being
+# the same REVIEW_DISPLAY_LIMIT reviews.
+REVIEW_DISPLAY_LIMIT = 6
+REVIEW_BODY_MAX_LENGTH = 5000
 
 # --- Home page: popular games ---
 HOME_POPULAR_RESULT_LIMIT = 12

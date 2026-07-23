@@ -30,5 +30,12 @@ export const renderActivityMessage = (event: ActivityEvent) => {
 					<strong>{event.game_title}</strong> as played in {event.year_played}
 				</>
 			)
+		case 'reviewed':
+			return (
+				<>
+					<strong>{event.username}</strong> reviewed{' '}
+					<strong>{event.game_title}</strong>
+				</>
+			)
 	}
 }

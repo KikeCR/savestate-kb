@@ -71,6 +71,10 @@ def list_entries():
             return jsonify({"error": f"status must be one of {ENTRY_STATUSES}"}), 400
         query = query.filter_by(status=status)
 
+    game_id = request.args.get("game_id", type=int)
+    if game_id:
+        query = query.filter_by(game_id=game_id)
+
     year = request.args.get("year", type=int)
     if year:
         query = query.filter_by(year_played=year)

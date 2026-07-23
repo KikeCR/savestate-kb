@@ -47,6 +47,7 @@
 
 .game-detail__cover {
 	flex-shrink: 0;
+	align-self: flex-start;
 	width: 240px;
 	border-radius: var(--radius-md);
 	overflow: hidden;
@@ -145,6 +146,12 @@
 	cursor: default;
 }
 
+.game-detail__add--owned {
+	background: var(--color-surface-alt);
+	color: var(--color-text-secondary);
+	border: 1px solid var(--color-border);
+}
+
 .game-detail__description {
 	max-width: 65ch;
 	line-height: 1.6;
@@ -162,4 +169,14 @@
 .game-detail__credits p {
 	margin: 0.25rem 0;
 	font-size: var(--font-size-sm);
+}
+
+.game-detail__reviews {
+	margin: 2rem 0;
+}
+
+.review-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: 1rem;
 }
