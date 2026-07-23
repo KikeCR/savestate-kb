@@ -8,7 +8,7 @@ import { GameCard } from '../components/GameCard'
 import { StatTile } from '../components/StatTile'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
-import type { ActivityEvent, DashboardSummary } from '../types'
+import { PLATFORMS, type ActivityEvent, type DashboardSummary } from '../types'
 import { renderActivityMessage } from '../utils/activityMessage'
 import {
 	PASSWORD_POLICY_HINT,
@@ -74,6 +74,20 @@ export const Dashboard = () => {
 		}
 	}
 
+	const handleTogglePlatform = async (platform: string) => {
+		const next = user.preferred_platforms.includes(platform)
+			? user.preferred_platforms.filter((p) => p !== platform)
+			: [...user.preferred_platforms, platform]
+		setSaving(true)
+		try {
+			await updateProfile({ preferred_platforms: next })
+		} catch (err) {
+			setError(err instanceof Error ? err.message : String(err))
+		} finally {
+			setSaving(false)
+		}
+	}
+
 	const handleAvatarClear = async () => {
 		setAvatarUrlInput('')
 		setSaving(true)
@@ -128,6 +142,9 @@ export const Dashboard = () => {
 				>
 					<Tabs.Trigger value="overview" className="dashboard-tabs__trigger">
 						Overview
+					</Tabs.Trigger>
+					<Tabs.Trigger value="preferences" className="dashboard-tabs__trigger">
+						Preferences
 					</Tabs.Trigger>
 					<Tabs.Trigger value="password" className="dashboard-tabs__trigger">
 						Change Password
@@ -261,6 +278,26 @@ export const Dashboard = () => {
 							))}
 						</ul>
 					)}
+				</Tabs.Content>
+
+				<Tabs.Content value="preferences" className="dashboard-tabs__content">
+					<p>
+						Platforms you own or prefer — recommendations lean toward games
+						available on these, without excluding anything else.
+					</p>
+					<div className="platform-toggle">
+						{PLATFORMS.map((platform) => (
+							<label key={platform}>
+								<input
+									type="checkbox"
+									checked={user.preferred_platforms.includes(platform)}
+									onChange={() => handleTogglePlatform(platform)}
+									disabled={saving}
+								/>
+								{platform}
+							</label>
+						))}
+					</div>
 				</Tabs.Content>
 
 				<Tabs.Content value="password" className="dashboard-tabs__content">

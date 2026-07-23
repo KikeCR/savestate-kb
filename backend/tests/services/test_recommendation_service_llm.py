@@ -1,3 +1,5 @@
+import random
+
 import pytest
 
 from app.constants import (
@@ -103,6 +105,97 @@ def test_backfill_skips_games_already_used():
     filled = recommendation_service._backfill(games_with_reasons, candidates, limit=2)
 
     assert [game.id for game, _ in filled] == [2, 1]
+
+
+# --- Platform soft-boost (_select_diverse_candidates, _build_user_prompt).
+# Pure-function tests: operate on plain (transient, unsaved) Game objects,
+# no app/DB needed. ---
+
+
+def test_platform_boost_is_noop_when_preferred_platforms_is_none(monkeypatch):
+    monkeypatch.setattr(recommendation_service.random, "uniform", lambda a, b: 1.5)
+    pool = [
+        _candidate(1, platforms=["PC"]),
+        _candidate(2, platforms=["Nintendo Switch"]),
+        _candidate(3, platforms=["Xbox One"]),
+    ]
+
+    without_param = recommendation_service._select_diverse_candidates(pool, set(), limit=2)
+    with_none = recommendation_service._select_diverse_candidates(
+        pool, set(), limit=2, preferred_platforms=None
+    )
+
+    assert [g.id for g in without_param] == [g.id for g in with_none]
+
+
+def test_platform_boost_is_noop_when_preferred_platforms_is_empty(monkeypatch):
+    monkeypatch.setattr(recommendation_service.random, "uniform", lambda a, b: 1.5)
+    pool = [
+        _candidate(1, platforms=["PC"]),
+        _candidate(2, platforms=["Nintendo Switch"]),
+        _candidate(3, platforms=["Xbox One"]),
+    ]
+
+    without_boost = recommendation_service._select_diverse_candidates(pool, set(), limit=2)
+    with_empty = recommendation_service._select_diverse_candidates(
+        pool, set(), limit=2, preferred_platforms=[]
+    )
+
+    assert [g.id for g in without_boost] == [g.id for g in with_empty]
+
+
+def test_platform_boost_favors_matching_platform_candidate():
+    # game_a leads on base position weight (decay**0 > decay**1); game_b only
+    # wins out ahead of it often enough once its platform-match boost is
+    # applied. Run many trials with a seeded RNG and check the *empirical*
+    # pick-first frequency lands near the analytically expected boosted
+    # probability, not the un-boosted one — a statistical check (per the
+    # plan) since the sampling is genuinely randomized.
+    random.seed(1234)
+    pool = [
+        _candidate(1, title="No Match", platforms=["PC"]),
+        _candidate(2, title="Match", platforms=["Nintendo Switch"]),
+    ]
+
+    trials = 2000
+    match_first_count = 0
+    for _ in range(trials):
+        picked = recommendation_service._select_diverse_candidates(
+            pool, set(), limit=1, preferred_platforms=["Nintendo Switch"]
+        )
+        if picked[0].title == "Match":
+            match_first_count += 1
+
+    observed = match_first_count / trials
+    # Analytically: boosted weight_b = 0.9 * 1.5 = 1.35 vs weight_a = 1.0 ->
+    # P(b first) = 1.35 / 2.35 ~= 0.574. Unboosted P(b first) = 0.9/1.9 ~=
+    # 0.474. 0.53 cleanly separates the two given ~0.011 std at N=2000.
+    assert observed > 0.53
+
+
+def test_system_prompt_instructs_strong_platform_weighting():
+    assert "strongly prefer" in recommendation_service._SYSTEM_PROMPT.lower()
+    assert "platform" in recommendation_service._SYSTEM_PROMPT.lower()
+
+
+def test_build_user_prompt_includes_preferred_platforms_and_candidate_platforms():
+    candidates = [_candidate(1, title="Celeste", platforms=["PC", "Nintendo Switch"])]
+
+    prompt = recommendation_service._build_user_prompt(
+        [], candidates, limit=1, preferred_platforms=["Nintendo Switch"]
+    )
+
+    assert "Owns/prefers platforms: Nintendo Switch." in prompt
+    assert "Strongly prefer candidates available on one of these platforms." in prompt
+    assert "Platforms: PC, Nintendo Switch." in prompt
+
+
+def test_build_user_prompt_omits_platform_preference_line_when_unset():
+    candidates = [_candidate(1, title="Celeste", platforms=["PC"])]
+
+    prompt = recommendation_service._build_user_prompt([], candidates, limit=1)
+
+    assert "Owns/prefers platforms" not in prompt
 
 
 # --- Integration tests: the full get_recommendations provider chain. Mocks

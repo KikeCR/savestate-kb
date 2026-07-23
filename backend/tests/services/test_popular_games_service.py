@@ -113,3 +113,53 @@ def test_results_are_capped_at_limit(app, make_game):
         result = popular_games_service.get_popular_games()
 
     assert len(result["critics"]) == HOME_POPULAR_RESULT_LIMIT
+
+
+# --- Local rating stats (savestate users' own average rating) ---
+
+
+def test_local_rating_stats_averages_across_users(app, make_user, make_game, make_entry):
+    with app.app_context():
+        game = make_game(title="Rated Game")
+        make_entry(make_user(), game, rating=8)
+        make_entry(make_user(), game, rating=6)
+
+        avg, count = popular_games_service.get_local_rating_stats(game.id)
+
+    assert avg == 7.0
+    assert count == 2
+
+
+def test_local_rating_stats_excludes_unrated_entries(app, make_user, make_game, make_entry):
+    with app.app_context():
+        game = make_game(title="Mixed Ratings")
+        make_entry(make_user(), game, rating=10)
+        make_entry(make_user(), game, rating=None)
+
+        avg, count = popular_games_service.get_local_rating_stats(game.id)
+
+    assert avg == 10.0
+    assert count == 1
+
+
+def test_local_rating_stats_with_zero_entries(app, make_game):
+    with app.app_context():
+        game = make_game(title="Nobody Rated This")
+
+        avg, count = popular_games_service.get_local_rating_stats(game.id)
+
+    assert avg is None
+    assert count == 0
+
+
+def test_local_rating_stats_rounds_to_one_decimal(app, make_user, make_game, make_entry):
+    with app.app_context():
+        game = make_game(title="Uneven Split")
+        make_entry(make_user(), game, rating=7)
+        make_entry(make_user(), game, rating=8)
+        make_entry(make_user(), game, rating=8)
+
+        avg, count = popular_games_service.get_local_rating_stats(game.id)
+
+    assert avg == 7.7
+    assert count == 3

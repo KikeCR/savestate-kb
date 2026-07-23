@@ -15,7 +15,9 @@ interface AuthContextValue {
 	login: (email: string, password: string) => Promise<User>
 	logout: () => Promise<void>
 	updateProfile: (
-		fields: Partial<Pick<User, 'profile_visibility' | 'avatar_url'>>,
+		fields: Partial<
+			Pick<User, 'profile_visibility' | 'avatar_url' | 'preferred_platforms'>
+		>,
 	) => Promise<User>
 	requestPasswordReset: (email: string) => Promise<void>
 	resetPassword: (token: string, password: string) => Promise<User>
@@ -65,7 +67,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 	}
 
 	const updateProfile = async (
-		fields: Partial<Pick<User, 'profile_visibility' | 'avatar_url'>>,
+		fields: Partial<
+			Pick<User, 'profile_visibility' | 'avatar_url' | 'preferred_platforms'>
+		>,
 	) => {
 		const data = await api.patch<User>('/api/auth/me', fields)
 		setUser(data)

@@ -30,6 +30,18 @@ class Game(db.Model):
     rawg_ratings_count = db.Column(db.Integer)
     tags = db.Column(ARRAY(db.String), nullable=False, default=list)
 
+    # Detail-endpoint fields — fetched from RAWG's per-game detail endpoint
+    # on first game-page view (not the cheaper list/search endpoint used
+    # elsewhere) and persisted here so repeat views don't re-fetch.
+    # detail_fetched_at is the sentinel for "has this been fetched", kept
+    # distinct from synced_at (which tracks catalog_sync passes only).
+    description = db.Column(db.Text)
+    esrb_rating = db.Column(db.String(50))
+    developers = db.Column(ARRAY(db.String), nullable=False, default=list)
+    publishers = db.Column(ARRAY(db.String), nullable=False, default=list)
+    website = db.Column(db.String(500))
+    detail_fetched_at = db.Column(db.DateTime(timezone=True))
+
     # RAG retrieval fields. embedding_text is stored alongside the vector so
     # embeddings can be reproduced/debugged without recomputing the source
     # text from scratch. synced_at marks the last catalog_sync pass that
@@ -50,4 +62,9 @@ class Game(db.Model):
             "metacritic": self.metacritic,
             "rawg_rating": self.rawg_rating,
             "tags": self.tags or [],
+            "description": self.description,
+            "esrb_rating": self.esrb_rating,
+            "developers": self.developers or [],
+            "publishers": self.publishers or [],
+            "website": self.website,
         }

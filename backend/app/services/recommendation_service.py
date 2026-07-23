@@ -2,6 +2,8 @@ import json
 import random
 from datetime import datetime, timezone
 
+from sqlalchemy import case
+
 from app import extensions
 from app.constants import (
     CATALOG_MIN_METACRITIC,
@@ -14,6 +16,7 @@ from app.constants import (
     RECOMMENDATION_CANDIDATE_LIMIT,
     RECOMMENDATION_CANDIDATE_POOL_LIMIT,
     RECOMMENDATION_MIN_TASTE_SIGNALS,
+    RECOMMENDATION_PLATFORM_BOOST_MULTIPLIER,
     RECOMMENDATION_RECENTLY_SHOWN_WINDOW_SECONDS,
     RECOMMENDATION_REFRESH_COOLDOWN_SECONDS,
     RECOMMENDATION_RESERVE_LIMIT,
@@ -24,8 +27,10 @@ from app.constants import (
     RECOMMENDATION_TOPUP_MAX_PER_WINDOW,
     RECOMMENDATION_VARIETY_DECAY,
 )
+from app.extensions import db
 from app.models.game import Game
 from app.models.game_feedback import GameFeedback
+from app.models.user import User
 from app.models.user_game_entry import UserGameEntry
 from app.services import embeddings, llm_client
 
@@ -43,10 +48,15 @@ _SYSTEM_PROMPT = (
     "You are a game recommendation assistant for a game-tracking app. You "
     "will be given a player's taste profile and a numbered list of "
     "candidate games. Choose the best matches for this player and give a "
-    "one-sentence reason for each. Respond with strict JSON only, in "
-    'exactly this shape: {"recommendations": [{"index": <int>, "reason": '
-    '"<string>"}]}. Only ever use "index" values from the candidate list '
-    "provided — never invent a game, and never reference a game by name."
+    "one-sentence reason for each. If the taste profile names platforms the "
+    "player owns or prefers, treat that as a strong constraint: strongly "
+    "prefer candidates available on at least one of those platforms, and "
+    "only include a candidate on a different platform when there are not "
+    "enough good platform matches among the candidates. Respond with strict "
+    'JSON only, in exactly this shape: {"recommendations": [{"index": '
+    '<int>, "reason": "<string>"}]}. Only ever use "index" values from the '
+    "candidate list provided — never invent a game, and never reference a "
+    "game by name."
 )
 
 
@@ -135,22 +145,44 @@ def _templated_top_picks(candidates, limit):
     return [(game, _templated_reason(game)) for game in candidates[:limit]]
 
 
-def _popularity_fallback(excluded_game_ids, limit):
+def _platform_tier_order(preferred_platforms):
+    """A CASE expression that sorts platform-matching games ahead of
+    everything else (tier 0 vs. tier 1), for use as the *first* ORDER BY key
+    ahead of the query's real ranking (distance / metacritic). This is what
+    actually makes the platform preference visible: applying the boost only
+    after retrieval (see _select_diverse_candidates) can't surface matches
+    that never made it into the nearest-neighbor pool to begin with — this
+    fills the pool with every available match (up to its limit) before any
+    non-matching game is considered, without ever excluding non-matches
+    outright when matches run out. Returns None (no-op ORDER BY key) when
+    preferred_platforms is empty, so behavior for users without a platform
+    preference is unchanged.
+    """
+    if not preferred_platforms:
+        return None
+    return case((Game.platforms.overlap(list(preferred_platforms)), 0), else_=1)
+
+
+def _popularity_fallback(excluded_game_ids, limit, preferred_platforms=None):
     query = Game.query.filter(_QUALITY_FLOOR)
     if excluded_game_ids:
         query = query.filter(Game.id.notin_(excluded_game_ids))
-    return (
-        query.order_by(Game.metacritic.desc().nullslast(), Game.rawg_ratings_count.desc())
-        .limit(limit)
-        .all()
-    )
+    order = [Game.metacritic.desc().nullslast(), Game.rawg_ratings_count.desc()]
+    tier = _platform_tier_order(preferred_platforms)
+    if tier is not None:
+        order.insert(0, tier)
+    return query.order_by(*order).limit(limit).all()
 
 
-def _retrieve_candidates(query_vector, excluded_game_ids, limit):
+def _retrieve_candidates(query_vector, excluded_game_ids, limit, preferred_platforms=None):
     query = Game.query.filter(_QUALITY_FLOOR, Game.embedding.isnot(None))
     if excluded_game_ids:
         query = query.filter(Game.id.notin_(excluded_game_ids))
-    return query.order_by(Game.embedding.cosine_distance(query_vector)).limit(limit).all()
+    order = [Game.embedding.cosine_distance(query_vector)]
+    tier = _platform_tier_order(preferred_platforms)
+    if tier is not None:
+        order.insert(0, tier)
+    return query.order_by(*order).limit(limit).all()
 
 
 def _weighted_sample_without_replacement(items, weights, k):
@@ -169,7 +201,7 @@ def _weighted_sample_without_replacement(items, weights, k):
     return chosen
 
 
-def _select_diverse_candidates(pool, recently_shown_game_ids, limit):
+def _select_diverse_candidates(pool, recently_shown_game_ids, limit, preferred_platforms=None):
     """Narrows a wider nearest-neighbor pool down to `limit` candidates.
     Fresh (not recently-shown) games are preferred and picked via a
     position-weighted random sample (closer matches more likely, not
@@ -177,11 +209,27 @@ def _select_diverse_candidates(pool, recently_shown_game_ids, limit):
     result if the fresh pool alone can't fill `limit` (small catalog / niche
     taste), since a soft de-prioritization is safer than a hard exclusion
     that could starve a thin candidate pool.
+
+    preferred_platforms (if any) applies a further soft boost: a fresh
+    candidate available on one of the user's platforms gets its weight
+    multiplied by RECOMMENDATION_PLATFORM_BOOST_MULTIPLIER before sampling.
+    Still just a weight — a candidate on a different platform can still be
+    picked, it's just relatively less likely. A falsy preferred_platforms is
+    a strict no-op, so this matches today's behavior for every user who
+    hasn't set a platform preference.
     """
     fresh = [game for game in pool if game.id not in recently_shown_game_ids]
     stale = [game for game in pool if game.id in recently_shown_game_ids]
 
+    preferred_platforms = set(preferred_platforms or ())
     weights = [RECOMMENDATION_VARIETY_DECAY**i for i in range(len(fresh))]
+    if preferred_platforms:
+        weights = [
+            weight * RECOMMENDATION_PLATFORM_BOOST_MULTIPLIER
+            if preferred_platforms & set(game.platforms or ())
+            else weight
+            for weight, game in zip(weights, fresh)
+        ]
     selected = _weighted_sample_without_replacement(fresh, weights, min(limit, len(fresh)))
     if len(selected) < limit:
         selected += stale[: limit - len(selected)]
@@ -221,7 +269,8 @@ def _mark_games_shown(user_id, game_ids, redis_client):
 def _prepare(user_id, redis_client=None):
     """Shared setup for the retrieval-only and full pipelines: builds the
     taste profile and retrieves a diversified candidate pool. Returns
-    (taste_items, candidates), or (None, None) to signal cold start.
+    (taste_items, candidates, preferred_platforms), or (None, None, None) to
+    signal cold start.
     """
     redis_client = _resolve_redis(redis_client)
     owned_game_ids = _owned_game_ids(user_id)
@@ -233,25 +282,38 @@ def _prepare(user_id, redis_client=None):
     taste_items = _build_taste_items(taste_signals, liked_feedback)
 
     if len(taste_items) < RECOMMENDATION_MIN_TASTE_SIGNALS:
-        return None, None
+        return None, None, None
 
     query_text = _compose_taste_query_text(taste_items)
     query_vector = embeddings.embed_text(query_text)
 
+    user = db.session.get(User, user_id)
+    preferred_platforms = user.preferred_platforms if user else None
+
     pool = _retrieve_candidates(
-        query_vector, excluded_game_ids, RECOMMENDATION_CANDIDATE_POOL_LIMIT
+        query_vector,
+        excluded_game_ids,
+        RECOMMENDATION_CANDIDATE_POOL_LIMIT,
+        preferred_platforms,
     )
     if not pool:
-        pool = _popularity_fallback(excluded_game_ids, RECOMMENDATION_CANDIDATE_POOL_LIMIT)
+        pool = _popularity_fallback(
+            excluded_game_ids, RECOMMENDATION_CANDIDATE_POOL_LIMIT, preferred_platforms
+        )
 
     candidates = _select_diverse_candidates(
-        pool, recently_shown_game_ids, RECOMMENDATION_CANDIDATE_LIMIT
+        pool, recently_shown_game_ids, RECOMMENDATION_CANDIDATE_LIMIT, preferred_platforms
     )
-    return taste_items, candidates
+    return taste_items, candidates, preferred_platforms
 
 
-def _build_user_prompt(taste_items, candidates, limit):
+def _build_user_prompt(taste_items, candidates, limit, preferred_platforms=None):
     taste_summary = _compose_taste_query_text(taste_items)
+    if preferred_platforms:
+        taste_summary += (
+            f"\nOwns/prefers platforms: {', '.join(preferred_platforms)}. "
+            "Strongly prefer candidates available on one of these platforms."
+        )
     lines = []
     for index, game in enumerate(candidates):
         meta = (
@@ -260,7 +322,8 @@ def _build_user_prompt(taste_items, candidates, limit):
             else "unrated by Metacritic"
         )
         genres = ", ".join(game.genres) if game.genres else "Unknown genre"
-        lines.append(f"{index}: {game.title} — {genres}. {meta}.")
+        platforms = ", ".join(game.platforms) if game.platforms else "Unknown platform"
+        lines.append(f"{index}: {game.title} — {genres}. {meta}. Platforms: {platforms}.")
     candidates_block = "\n".join(lines)
     return (
         f"Player taste profile:\n{taste_summary}\n\n"
@@ -314,14 +377,14 @@ def _backfill(games_with_reasons, candidates, limit):
     return games_with_reasons[:limit]
 
 
-def _generate_with_llm(taste_items, candidates, limit):
+def _generate_with_llm(taste_items, candidates, limit, preferred_platforms=None):
     """Walks the provider chain (DeepSeek -> Kimi), returning
     (provider_name, games_with_reasons) from the first provider that
     produces at least one valid pick, or (None, None) if every provider is
     unconfigured, over budget, or failed — signaling the caller to fall
     back to a pure retrieval ranking.
     """
-    user_prompt = _build_user_prompt(taste_items, candidates, limit)
+    user_prompt = _build_user_prompt(taste_items, candidates, limit, preferred_platforms)
 
     for provider in (LLM_PROVIDER_DEEPSEEK, LLM_PROVIDER_KIMI):
         parsed = llm_client.try_chat_completion_json(provider, _SYSTEM_PROMPT, user_prompt)
@@ -440,14 +503,14 @@ def _compute_recommendations(user_id, redis_client=None):
     and swap in replacements without a new LLM round-trip.
     """
     redis_client = _resolve_redis(redis_client)
-    taste_items, candidates = _prepare(user_id, redis_client)
+    taste_items, candidates, preferred_platforms = _prepare(user_id, redis_client)
     if taste_items is None:
         return _serialize(
             RECOMMENDATION_SOURCE_RETRIEVAL_ONLY, cold_start=True, games_with_reasons=[]
         )
 
     provider, games_with_reasons = _generate_with_llm(
-        taste_items, candidates, RECOMMENDATION_RESERVE_LIMIT
+        taste_items, candidates, RECOMMENDATION_RESERVE_LIMIT, preferred_platforms
     )
     if provider is None:
         provider = RECOMMENDATION_SOURCE_RETRIEVAL_ONLY
@@ -482,7 +545,7 @@ def get_retrieval_only_recommendations(user_id, redis_client=None):
     fallback inside get_recommendations.
     """
     redis_client = _resolve_redis(redis_client)
-    taste_items, candidates = _prepare(user_id, redis_client)
+    taste_items, candidates, _preferred_platforms = _prepare(user_id, redis_client)
     if taste_items is None:
         return _serialize(
             RECOMMENDATION_SOURCE_RETRIEVAL_ONLY, cold_start=True, games_with_reasons=[]
@@ -507,7 +570,7 @@ def get_topup_recommendations(user_id, exclude_game_ids=None, redis_client=None)
     original cached set until it naturally expires or is force-refreshed.
     """
     redis_client = _resolve_redis(redis_client)
-    taste_items, candidates = _prepare(user_id, redis_client)
+    taste_items, candidates, preferred_platforms = _prepare(user_id, redis_client)
     if taste_items is None:
         return _serialize(
             RECOMMENDATION_SOURCE_RETRIEVAL_ONLY, cold_start=True, games_with_reasons=[]
@@ -518,7 +581,7 @@ def get_topup_recommendations(user_id, exclude_game_ids=None, redis_client=None)
         candidates = [game for game in candidates if game.id not in exclude_set]
 
     provider, games_with_reasons = _generate_with_llm(
-        taste_items, candidates, RECOMMENDATION_TOPUP_LIMIT
+        taste_items, candidates, RECOMMENDATION_TOPUP_LIMIT, preferred_platforms
     )
     if provider is None:
         provider = RECOMMENDATION_SOURCE_RETRIEVAL_ONLY

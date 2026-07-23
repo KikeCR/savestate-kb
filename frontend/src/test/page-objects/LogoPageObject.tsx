@@ -5,7 +5,7 @@ export class LogoPageObject {
 	private container: HTMLElement
 
 	constructor() {
-		const { container } = renderWithProviders(<Logo />)
+		const { container } = renderWithProviders(<Logo />, { withAuth: false })
 		this.container = container
 	}
 

@@ -301,6 +301,95 @@ def test_recently_shown_games_still_appear_when_no_fresh_alternative_exists(
     assert "Only Candidate" in titles
 
 
+# --- Preferred platforms threaded through _prepare ---
+
+
+def test_prepare_returns_users_preferred_platforms(app, make_user, make_game, make_entry):
+    from app.services import recommendation_service
+
+    user = make_user(preferred_platforms=["PC", "Nintendo Switch"])
+    with app.app_context():
+        _add_taste_signals(make_game, make_entry, user)
+
+        _taste_items, _candidates, preferred_platforms = recommendation_service._prepare(user.id)
+
+    assert preferred_platforms == ["PC", "Nintendo Switch"]
+
+
+def test_prepare_returns_none_platforms_for_cold_start(app, make_user):
+    from app.services import recommendation_service
+
+    user = make_user(preferred_platforms=["PC"])
+    with app.app_context():
+        taste_items, candidates, preferred_platforms = recommendation_service._prepare(user.id)
+
+    assert taste_items is None
+    assert candidates is None
+    assert preferred_platforms is None
+
+
+# --- Retrieval-stage platform tiering (_retrieve_candidates, _popularity_fallback) ---
+
+
+def test_retrieve_candidates_surfaces_platform_matches_ahead_of_closer_non_matches(app, make_game):
+    from app.services import recommendation_service
+
+    with app.app_context():
+        # "Close Non-Match" is a near-perfect embedding match but on a
+        # platform the user doesn't own; "Far Match" is a weaker embedding
+        # match but on a platform they do — tiering must still put the
+        # platform match first, ahead of a closer non-match.
+        make_game(
+            title="Close Non-Match",
+            metacritic=CATALOG_MIN_METACRITIC,
+            platforms=["Xbox One"],
+            embedding=_vector(1.0),
+        )
+        make_game(
+            title="Far Match",
+            metacritic=CATALOG_MIN_METACRITIC,
+            platforms=["Nintendo Switch"],
+            embedding=_vector(0.1),
+        )
+
+        results = recommendation_service._retrieve_candidates(
+            _vector(1.0), excluded_game_ids=set(), limit=10, preferred_platforms=["Nintendo Switch"]
+        )
+
+    titles = [g.title for g in results]
+    assert titles.index("Far Match") < titles.index("Close Non-Match")
+
+
+def test_retrieve_candidates_orders_purely_by_distance_when_no_platform_preference(app, make_game):
+    from app.services import recommendation_service
+
+    with app.app_context():
+        make_game(title="Closest", metacritic=CATALOG_MIN_METACRITIC, embedding=_vector(1.0))
+        make_game(title="Farthest", metacritic=CATALOG_MIN_METACRITIC, embedding=_vector(0.1))
+
+        results = recommendation_service._retrieve_candidates(
+            _vector(1.0), excluded_game_ids=set(), limit=10
+        )
+
+    titles = [g.title for g in results]
+    assert titles == ["Closest", "Farthest"]
+
+
+def test_popularity_fallback_surfaces_platform_matches_ahead_of_higher_metacritic(app, make_game):
+    from app.services import recommendation_service
+
+    with app.app_context():
+        make_game(title="Higher Score Non-Match", metacritic=95, platforms=["Xbox One"])
+        make_game(title="Lower Score Match", metacritic=80, platforms=["Nintendo Switch"])
+
+        results = recommendation_service._popularity_fallback(
+            excluded_game_ids=set(), limit=10, preferred_platforms=["Nintendo Switch"]
+        )
+
+    titles = [g.title for g in results]
+    assert titles.index("Lower Score Match") < titles.index("Higher Score Non-Match")
+
+
 def test_recently_shown_window_expires(app, make_user, make_game, make_entry, monkeypatch):
     from datetime import datetime, timedelta, timezone
 

@@ -41,6 +41,14 @@ export class RecommendationCardPageObject {
 		return this.container.querySelector('img')
 	}
 
+	get coverLinkHref(): string | null {
+		return (
+			this.container
+				.querySelector('.recommendation-card__cover')
+				?.getAttribute('href') ?? null
+		)
+	}
+
 	get hasCoverPlaceholder(): boolean {
 		return (
 			this.container.querySelector(

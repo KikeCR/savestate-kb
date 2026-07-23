@@ -22,6 +22,7 @@ export const mockUser: User = {
 	username: 'jane',
 	profile_visibility: 'public',
 	avatar_url: null,
+	preferred_platforms: [],
 	created_at: '2024-01-01T00:00:00.000Z',
 }
 
@@ -38,6 +39,7 @@ export const mockOtherUser: User = {
 	username: 'sam',
 	profile_visibility: 'public',
 	avatar_url: null,
+	preferred_platforms: [],
 	created_at: '2024-02-01T00:00:00.000Z',
 }
 

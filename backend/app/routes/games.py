@@ -14,6 +14,7 @@ from app.services.rawg_client import (
     RawgClient,
     RawgConfigError,
     normalize_rawg_game,
+    normalize_rawg_game_detail,
 )
 
 games_bp = Blueprint("games", __name__, url_prefix="/api/games")
@@ -85,3 +86,40 @@ def search_games():
     db.session.commit()
 
     return jsonify({"source": "rawg", "results": [g.to_dict() for g in games]})
+
+
+@games_bp.route("/<int:game_id>")
+@limiter.limit("30 per minute")
+def game_detail(game_id):
+    """Public game detail page endpoint. On a game's first-ever view, this
+    also fetches RAWG's per-game detail payload (description, ESRB rating,
+    developers/publishers, website) and persists it onto the row, since
+    normalize_rawg_game (used by search/sync) only ever populates fields
+    from the cheaper list endpoint. Rate-limited like /search since a
+    cache-miss here also spends RAWG quota.
+    """
+    game = db.session.get(Game, game_id)
+    if not game:
+        return jsonify({"error": "game not found"}), 404
+
+    if game.detail_fetched_at is None:
+        try:
+            client = RawgClient()
+            data = client.get_game_details(game.rawg_id)
+        except RawgConfigError as exc:
+            return jsonify({"error": str(exc)}), 503
+        except requests.RequestException as exc:
+            return jsonify({"error": f"RAWG API request failed: {exc}"}), 502
+
+        for key, value in normalize_rawg_game_detail(data).items():
+            setattr(game, key, value)
+        db.session.commit()
+
+    avg_rating, ratings_count = popular_games_service.get_local_rating_stats(game.id)
+    return jsonify(
+        {
+            **game.to_dict(),
+            "local_average_rating": avg_rating,
+            "local_ratings_count": ratings_count,
+        }
+    )

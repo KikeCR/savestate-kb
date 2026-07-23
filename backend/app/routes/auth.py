@@ -9,6 +9,7 @@ from flask_wtf.csrf import generate_csrf
 from app.constants import (
     AVATAR_URL_MAX_LENGTH,
     PASSWORD_RESET_TOKEN_EXPIRY_MINUTES,
+    PLATFORMS,
     PROFILE_VISIBILITIES,
 )
 from app.extensions import db, limiter
@@ -204,6 +205,14 @@ def update_me():
             return jsonify({"error": "avatar_url must be an http(s) URL"}), 400
         else:
             current_user.avatar_url = value
+
+    if "preferred_platforms" in data:
+        value = data["preferred_platforms"]
+        if not isinstance(value, list) or any(item not in PLATFORMS for item in value):
+            return jsonify(
+                {"error": f"preferred_platforms must be a list of values from {PLATFORMS}"}
+            ), 400
+        current_user.preferred_platforms = value
 
     db.session.commit()
     return jsonify(current_user.to_private_dict())

@@ -16,6 +16,14 @@ export class PopularGameCardPageObject {
 		this.container = container
 	}
 
+	get coverLinkHref(): string | null {
+		return (
+			this.container
+				.querySelector('.popular-game-card__cover')
+				?.getAttribute('href') ?? null
+		)
+	}
+
 	get title(): string | null {
 		return (
 			this.container.querySelector('.popular-game-card__title')?.textContent ??

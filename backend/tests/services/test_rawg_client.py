@@ -1,6 +1,10 @@
 from datetime import date
 
-from app.services.rawg_client import build_embedding_text, normalize_rawg_game
+from app.services.rawg_client import (
+    build_embedding_text,
+    normalize_rawg_game,
+    normalize_rawg_game_detail,
+)
 
 
 def _raw_game(**overrides):
@@ -137,3 +141,64 @@ def test_build_embedding_text_omits_empty_fields():
     text = build_embedding_text(normalized)
 
     assert text == "Hollow Knight"
+
+
+def _raw_game_detail(**overrides):
+    defaults = {
+        "description_raw": "A challenging Metroidvania set in Hallownest.",
+        "esrb_rating": {"id": 4, "name": "Teen"},
+        "developers": [{"name": "Team Cherry"}],
+        "publishers": [{"name": "Team Cherry"}],
+        "website": "https://hollowknight.com",
+    }
+    defaults.update(overrides)
+    return defaults
+
+
+def test_normalize_detail_maps_basic_fields():
+    normalized = normalize_rawg_game_detail(_raw_game_detail())
+
+    assert normalized["description"] == "A challenging Metroidvania set in Hallownest."
+    assert normalized["esrb_rating"] == "Teen"
+    assert normalized["developers"] == ["Team Cherry"]
+    assert normalized["publishers"] == ["Team Cherry"]
+    assert normalized["website"] == "https://hollowknight.com"
+    assert normalized["detail_fetched_at"] is not None
+
+
+def test_normalize_detail_dedupes_and_sorts_developers_and_publishers():
+    raw = _raw_game_detail(
+        developers=[{"name": "Studio B"}, {"name": "Studio A"}, {"name": "Studio A"}],
+        publishers=[{"name": "Pub B"}, {"name": "Pub A"}],
+    )
+
+    normalized = normalize_rawg_game_detail(raw)
+
+    assert normalized["developers"] == ["Studio A", "Studio B"]
+    assert normalized["publishers"] == ["Pub A", "Pub B"]
+
+
+def test_normalize_detail_handles_missing_optional_fields():
+    raw = _raw_game_detail(
+        description_raw=None,
+        esrb_rating=None,
+        developers=None,
+        publishers=None,
+        website=None,
+    )
+
+    normalized = normalize_rawg_game_detail(raw)
+
+    assert normalized["description"] is None
+    assert normalized["esrb_rating"] is None
+    assert normalized["developers"] == []
+    assert normalized["publishers"] == []
+    assert normalized["website"] is None
+
+
+def test_normalize_detail_treats_empty_description_as_none():
+    raw = _raw_game_detail(description_raw="")
+
+    normalized = normalize_rawg_game_detail(raw)
+
+    assert normalized["description"] is None

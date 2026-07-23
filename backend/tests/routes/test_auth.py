@@ -167,6 +167,38 @@ def test_update_me_rejects_non_http_scheme_avatar_url(logged_in_client):
     assert response.status_code == 400
 
 
+def test_update_me_sets_preferred_platforms(logged_in_client):
+    response = logged_in_client.patch(
+        "/api/auth/me", json={"preferred_platforms": ["PC", "Nintendo Switch"]}
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["preferred_platforms"] == ["PC", "Nintendo Switch"]
+
+
+def test_update_me_clears_preferred_platforms(logged_in_client):
+    logged_in_client.patch("/api/auth/me", json={"preferred_platforms": ["PC"]})
+
+    response = logged_in_client.patch("/api/auth/me", json={"preferred_platforms": []})
+
+    assert response.status_code == 200
+    assert response.get_json()["preferred_platforms"] == []
+
+
+def test_update_me_rejects_unknown_platform(logged_in_client):
+    response = logged_in_client.patch(
+        "/api/auth/me", json={"preferred_platforms": ["Sega Genesis"]}
+    )
+
+    assert response.status_code == 400
+
+
+def test_update_me_rejects_non_list_preferred_platforms(logged_in_client):
+    response = logged_in_client.patch("/api/auth/me", json={"preferred_platforms": "PC"})
+
+    assert response.status_code == 400
+
+
 def test_register_rejects_password_without_uppercase(client):
     response = client.post(
         "/api/auth/register",
